@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InternPilot - Pitch Deck & Presentation</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+  <style>
+    :root {
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --bg: #0f172a;
+      --slide-bg: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+      --success: #16a34a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Deck Viewport (16:9 ratio) */
+    .deck-container {
+      width: 90vw;
+      max-width: 1100px;
+      aspect-ratio: 16 / 9;
+      background: var(--slide-bg);
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 3.5rem 4rem;
+      flex-direction: column;
+      justify-content: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    .slide-tag {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+
+    .slide h1 {
+      font-size: 2.3rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      margin-top: 0.5rem;
+    }
+
+    .bullet-list li {
+      font-size: 1.35rem;
+      font-weight: 500;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .bullet-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* Slide 2: One sentence + Screenshot */
+    .solution-quote {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: #eff6ff;
+      border-left: 5px solid var(--accent);
+      padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 1.25rem;
+    }
+
+    .screenshot-frame {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      max-height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+    }
+
+    .screenshot-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* Slide 3: Live Demo */
+    .demo-slide-center {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .demo-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 0.4rem 1.2rem;
+      border-radius: 20px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.05em;
+    }
+
+    .demo-steps-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      text-align: left;
+    }
+
+    .demo-step-box {
+      flex: 1;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+    }
+
+    .demo-step-box h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+    }
+
+    .demo-step-box p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* Slide 4: Pipeline */
+    .pipeline-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f1f5f9;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .pipe-step {
+      background: #ffffff;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .pipe-arrow {
+      color: var(--accent);
+      font-size: 1.1rem;
+    }
+
+    .division-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .division-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    .division-box.rules {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .division-box.ai {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .division-box h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .division-box.rules h3 { color: #166534; }
+    .division-box.ai h3 { color: #1e40af; }
+
+    .division-box ul {
+      list-style: none;
+      font-size: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      color: #334155;
+    }
+
+    /* Slide 5: Impact & Roadmap */
+    .roadmap-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #d97706;
+      background: #fef3c7;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-left: 0.5rem;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      width: 90vw;
+      max-width: 1100px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1rem;
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    .controls-left, .controls-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-control {
+      background: #1e293b;
+      color: #ffffff;
+      border: 1px solid #334155;
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: background 0.15s ease;
+    }
+
+    .btn-control:hover {
+      background: #334155;
+    }
+
+    .timer-wrap {
+      background: #1e293b;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      font-family: monospace;
+      font-size: 0.95rem;
+      color: #38bdf8;
+    }
+
+    /* Speaker Notes Drawer */
+    .notes-drawer {
+      display: none;
+      width: 90vw;
+      max-width: 1100px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-top: 0.75rem;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .notes-drawer.open {
+      display: block;
+    }
+
+    .notes-header {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 16:9 Presentation Deck -->
+  <div class="deck-container" id="deck">
+
+    <!-- SLIDE 1: Problem (30s) -->
+    <div class="slide active" data-slide="1" data-time="30s">
+      <div class="slide-tag">Problem</div>
+      <h1>Fake internships. Missed deadlines.<br>One confused fresher.</h1>
+      <ul class="bullet-list">
+        <li><span class="bullet-dot"></span> Postings are everywhere (WhatsApp, Telegram, unverified boards)</li>
+        <li><span class="bullet-dot"></span> Scams ask for fees ("registration", "training kit", "security deposit")</li>
+        <li><span class="bullet-dot"></span> Deadlines get lost across scattered group chats and notes</li>
+      </ul>
+    </div>
+
+    <!-- SLIDE 2: Solution (20s) -->
+    <div class="slide" data-slide="2" data-time="20s">
+      <div class="slide-tag">Solution</div>
+      <h1>InternPilot: an AI agent for internship applications</h1>
+      <div class="solution-quote">
+        "It reads a posting, checks it for scams, decides what to do next, and asks before it acts."
+      </div>
+      <div class="screenshot-frame">
+        <img src="screenshots/screenshot-main.png" alt="InternPilot Main Dashboard">
+      </div>
+    </div>
+
+    <!-- SLIDE 3: Live Demo (100s) -->
+    <div class="slide demo-slide-center" data-slide="3" data-time="100s">
+      <div class="demo-badge">LIVE DEMO</div>
+      <h1 style="font-size: 3.2rem; margin-bottom: 0.5rem;">Switching to Live App</h1>
+      <p style="color: var(--muted); font-size: 1.15rem;">Running live at <strong style="color: var(--accent);">http://localhost:3000</strong></p>
+      
+      <div class="demo-steps-row">
+        <div class="demo-step-box">
+          <span style="color: var(--danger); font-weight: 800; font-size: 0.8rem;">STEP 1</span>
+          <h3>Scam Posting</h3>
+          <p>Red HIGH RISK alert, evidence phrases, halts immediately, 0 email drafted.</p>
+        </div>
+        <div class="demo-step-box">
+          <span style="color: var(--success); font-weight: 800; font-size: 0.8rem;">STEP 2</span>
+          <h3>Genuine Posting</h3>
+          <p>Scam check clean, 83% match, tailored cover email, asks before saving.</p>
+        </div>
+        <div class="demo-step-box">
+          <span style="color: var(--accent); font-weight: 800; font-size: 0.8rem;">STEP 3</span>
+          <h3>My Tracker</h3>
+          <p>Nearest deadlines sorted, weekly activity score, localStorage persistence.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: How It Works (30s) -->
+    <div class="slide" data-slide="4" data-time="30s">
+      <div class="slide-tag">Architecture</div>
+      <h1>How It Works: AI vs. Deterministic Rules</h1>
+
+      <div class="pipeline-bar">
+        <span class="pipe-step">Posting</span>
+        <span class="pipe-arrow">➔</span>
+        <span class="pipe-step">Scam check</span>
+        <span class="pipe-arrow">➔</span>
+        <span class="pipe-step">Match</span>
+        <span class="pipe-arrow">➔</span>
+        <span class="pipe-step">Email</span>
+        <span class="pipe-arrow">➔</span>
+        <span class="pipe-step" style="background:#eff6ff; color:var(--accent);">You confirm</span>
+        <span class="pipe-arrow">➔</span>
+        <span class="pipe-step">Tracker</span>
+      </div>
+
+      <div class="division-grid">
+        <div class="division-box rules">
+          <h3>🛡️ Our Own Deterministic Rules</h3>
+          <ul>
+            <li>• Scam check risk scoring & weight math (0-100 pts)</li>
+            <li>• Token-boundary skill extraction & alignment %</li>
+            <li>• Weekly activity score & deadline discipline</li>
+            <li>• Client-side storage (localStorage)</li>
+          </ul>
+        </div>
+        <div class="division-box ai">
+          <h3>🤖 Google Gemini AI (gemini-1.5-flash)</h3>
+          <ul>
+            <li>• Reads unstructured postings & extracts details</li>
+            <li>• Grounded email drafter (references only resume facts)</li>
+            <li>• Injection-hardened system boundaries</li>
+            <li>• Offline fallback with pre-cached real inferences</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: Impact & Next Steps (20s) -->
+    <div class="slide" data-slide="5" data-time="20s">
+      <div class="slide-tag">Impact & Next Steps</div>
+      <h1>Who It Helps & What's Ahead</h1>
+      
+      <ul class="bullet-list" style="margin-bottom: 1.5rem;">
+        <li><span class="bullet-dot"></span> <strong>Who it helps:</strong> First-year college students, freshers, and families navigating recruitment.</li>
+      </ul>
+
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem;">
+        <h3 style="font-size: 1rem; color: var(--muted); margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;">
+          Next <span class="roadmap-badge">Planned Roadmap</span>
+        </h3>
+        <ul class="bullet-list" style="gap: 0.75rem;">
+          <li style="font-size: 1.05rem;"><span class="bullet-dot" style="background:#d97706;"></span> More community-reported scam rules & suspicious domain checks</li>
+          <li style="font-size: 1.05rem;"><span class="bullet-dot" style="background:#d97706;"></span> Hindi and Punjabi language interface support</li>
+          <li style="font-size: 1.05rem;"><span class="bullet-dot" style="background:#d97706;"></span> College placement-cell version for batch-level verification</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: Team (10s) -->
+    <div class="slide" data-slide="6" data-time="10s">
+      <div class="slide-tag">InternPilot</div>
+      <h1 style="font-size: 2.8rem; margin-bottom: 0.8rem;">Built for students, by students.</h1>
+      
+      <p style="font-size: 1.25rem; color: var(--muted); margin-bottom: 1.5rem;">
+        Open-source, private, and running completely in the browser.
+      </p>
+
+      <div style="background: #eff6ff; border: 1px solid var(--accent); border-radius: 8px; padding: 1.5rem; text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent); margin-bottom: 0.35rem;">
+          "Try it with your own posting right now!"
+        </div>
+        <p style="font-size: 0.95rem; color: #475569;">
+          Open <span style="font-family: monospace; font-weight: 600;">http://localhost:3000</span> and paste any job posting.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deck Control Bar -->
+  <div class="controls-bar">
+    <div class="controls-left">
+      <button class="btn-control" id="prev-btn">◀ Previous</button>
+      <button class="btn-control" id="next-btn">Next ▶</button>
+      <span id="slide-indicator" style="font-weight: 600; color: #cbd5e1;">Slide 1 of 6</span>
+    </div>
+
+    <div class="controls-right">
+      <button class="btn-control" id="timer-toggle-btn">⏱️ Start Timer</button>
+      <div class="timer-wrap" id="timer-display">00:00</div>
+      <button class="btn-control" id="notes-toggle-btn">📝 Notes [N]</button>
+      <button class="btn-control" id="fs-toggle-btn">⛶ Fullscreen [F]</button>
+    </div>
+  </div>
+
+  <!-- Speaker Notes Drawer -->
+  <div class="notes-drawer" id="notes-drawer">
+    <div class="notes-header">
+      <span id="notes-title">Speaker Script (Slide 1 - 30 seconds)</span>
+      <span style="color:#94a3b8;">Use Arrow Keys / Space to advance</span>
+    </div>
+    <p id="notes-content">
+      "Last semester, my batchmate applied for what looked like a genuine web development internship on WhatsApp. Within twelve hours, he received an 'immediate offer letter'—with one catch: pay a ₹1,500 registration and onboarding fee before tomorrow morning. He hesitated, but the urgency got to him. He paid it. The contact blocked him that evening. First-year students are entering college eager to build experience. But predatory postings ask for money, students don't know what genuine requirements look like, and real application deadlines get buried in scattered group chats. That is why we built InternPilot."
+    </p>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    let currentIdx = 0;
+
+    const notesData = [
+      {
+        title: "Slide 1: Problem (30 sec)",
+        text: "Tell a genuine story about a suspicious offer you or a friend saw: 'Last semester, a fresher friend applied for an internship through a WhatsApp group. Within hours, they got an offer letter demanding ₹1,500 as an upfront onboarding fee. They paid it, and the contact vanished. Postings are everywhere, scams ask for fees, and genuine deadlines get lost. That is why we built InternPilot.'"
+      },
+      {
+        title: "Slide 2: Solution (20 sec)",
+        text: "'InternPilot is an autonomous AI agent designed specifically for first-year internship applications. It reads any posting, checks it for scams, decides what to do next based on skill alignment, and asks for confirmation before it ever acts.'"
+      },
+      {
+        title: "Slide 3: Live Demo (100 sec)",
+        text: "'Switch immediately to the app. 1) Load the scam posting: show how the red high risk banner immediately halts the flow with evidence phrases and safety tips—no email drafted. 2) Switch to genuine posting: show low risk, 83% match, a concise cover email referencing only resume facts, and the tracker prompt. Show clicking No saves nothing, clicking Yes saves it. 3) Switch to My Tracker: show deadline urgency sorting and our rule-based weekly activity score.'"
+      },
+      {
+        title: "Slide 4: How It Works (30 sec)",
+        text: "'InternPilot combines AI with our own deterministic rules. Gemini reads unstructured postings and drafts grounded emails. But all critical decisions are rule-based: scam risk math, skill percentage calculations, and weekly activity scores. High scam risk stops the agent, very low match gives a learn-first list, and it never saves or sends anything without a click.'"
+      },
+      {
+        title: "Slide 5: Impact & Next Steps (20 sec)",
+        text: "'InternPilot directly protects first-year students and freshers from financial fraud. On our planned roadmap: we are planning more community scam rules, multi-lingual support in Hindi and Punjabi, and a college placement-cell dashboard for university coordinators.'"
+      },
+      {
+        title: "Slide 6: Team & Judge Call-To-Action (10 sec)",
+        text: "'InternPilot is open-source, private, and running completely in the browser. We invite any judge to paste in a real internship posting of their choice right now and test our agent live. Thank you!'"
+      }
+    ];
+
+    const slideIndicator = document.getElementById('slide-indicator');
+    const notesTitle = document.getElementById('notes-title');
+    const notesContent = document.getElementById('notes-content');
+    const notesDrawer = document.getElementById('notes-drawer');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const notesBtn = document.getElementById('notes-toggle-btn');
+    const fsBtn = document.getElementById('fs-toggle-btn');
+
+    function showSlide(idx) {
+      if (idx < 0) idx = 0;
+      if (idx >= slides.length) idx = slides.length - 1;
+      currentIdx = idx;
+
+      slides.forEach((s, i) => {
+        s.classList.toggle('active', i === currentIdx);
+      });
+
+      slideIndicator.textContent = `Slide ${currentIdx + 1} of ${slides.length}`;
+      notesTitle.textContent = notesData[currentIdx].title;
+      notesContent.textContent = notesData[currentIdx].text;
+    }
+
+    prevBtn.addEventListener('click', () => showSlide(currentIdx - 1));
+    nextBtn.addEventListener('click', () => showSlide(currentIdx + 1));
+
+    notesBtn.addEventListener('click', () => {
+      notesDrawer.classList.toggle('open');
+    });
+
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space' || e.key === 'PageDown') {
+        showSlide(currentIdx + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        showSlide(currentIdx - 1);
+      } else if (e.key === 'n' || e.key === 'N') {
+        notesDrawer.classList.toggle('open');
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    });
+
+    // Presentation Timer
+    let timerInterval = null;
+    let timerSecs = 0;
+    const timerDisplay = document.getElementById('timer-display');
+    const timerBtn = document.getElementById('timer-toggle-btn');
+
+    timerBtn.addEventListener('click', () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerBtn.textContent = '⏱️ Resume';
+      } else {
+        timerInterval = setInterval(() => {
+          timerSecs++;
+          const mins = String(Math.floor(timerSecs / 60)).padStart(2, '0');
+          const secs = String(timerSecs % 60).padStart(2, '0');
+          timerDisplay.textContent = `${mins}:${secs}`;
+          if (timerSecs >= 180) {
+            timerDisplay.style.color = '#ef4444'; // Red if > 3 min
+          }
+        }, 1000);
+        timerBtn.textContent = '⏸️ Pause';
+      }
+    });
+
+    showSlide(0);
+  </script>
+</body>
+</html>
