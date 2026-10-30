@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InternPilot</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand">
+          <div class="brand-badge">Pilot</div>
+          <h1>InternPilot</h1>
+        </div>
+        <p class="tagline">Smart rule-based verification, skill alignment, and tailored outreach for student internships.</p>
+      </div>
+      <div class="header-nav">
+        <a href="tracker.html" class="nav-link-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Application Tracker
+        </a>
+      </div>
+    </header>
+
+    <!-- Quick Load Sample Controls -->
+    <section class="sample-loader-bar">
+      <div class="sample-group">
+        <label for="sample-posting-select">Load sample posting:</label>
+        <select id="sample-posting-select">
+          <option value="">-- Choose a test posting --</option>
+        </select>
+      </div>
+      <button id="load-sample-resume-btn" type="button" class="btn-secondary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Load Sample 1st-Year Resume
+      </button>
+    </section>
+
+    <!-- Main Input Section -->
+    <main class="inputs-grid">
+      <!-- Resume Card -->
+      <div class="card input-card">
+        <div class="card-header">
+          <h2>Your Resume</h2>
+          <span class="card-subtitle">Paste your resume text below</span>
+        </div>
+        <textarea 
+          id="resume-input" 
+          placeholder="Paste your plain text resume here (skills, education, projects, contact info)..."
+          rows="10"
+        ></textarea>
+      </div>
+
+      <!-- Job Posting Card -->
+      <div class="card input-card">
+        <div class="card-header">
+          <h2>Job Posting</h2>
+          <span class="card-subtitle">Paste the internship description below</span>
+        </div>
+        <textarea 
+          id="posting-input" 
+          placeholder="Paste the job or internship announcement text here..."
+          rows="10"
+        ></textarea>
+        <p class="field-note">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Your posting text is sent to Google's Gemini API to extract details.
+        </p>
+      </div>
+    </main>
+
+    <!-- Action Section -->
+    <section class="action-section">
+      <button id="run-btn" type="button" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Run InternPilot
+      </button>
+    </section>
+
+    <!-- Live Log Panel -->
+    <section class="card live-log-card">
+      <div class="card-header log-header">
+        <div class="log-title-wrap">
+          <span class="live-dot"></span>
+          <h2>Live Log</h2>
+        </div>
+        <span class="card-subtitle" id="log-status-text">Ready to analyze</span>
+      </div>
+      <div id="live-log" class="live-log-container">
+        <div class="log-empty-state">
+          Click <strong>"Run InternPilot"</strong> to inspect the posting for risks, calculate skill alignment, and generate a draft.
+        </div>
+      </div>
+    </section>
+
+    <!-- Required Disclaimer Footer -->
+    <footer class="app-footer">
+      <p class="disclaimer-text">
+        <strong>Disclaimer:</strong> Scam check shows warning signs, not proof. Verify the company independently.
+      </p>
+    </footer>
+  </div>
+
+  <script src="tools.js"></script>
+  <script src="agent.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
