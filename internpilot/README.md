@@ -1,140 +1,116 @@
 # InternPilot 🚀
 
-**InternPilot** is a smart, privacy-first internship assistant built with Node.js, Express, and Google Gemini API. It assists students (especially first-years) by detecting predatory scam postings, estimating skill alignment, and drafting grounded application emails.
+## The Problem
+First-year college students searching for internships face a surge of predatory fake job postings asking for registration fees, training charges, or sensitive identity documents before interviews. At the same time, managing application deadlines across multiple platforms leads to missed opportunities and scattered notes.
 
----
+## What It Does
+InternPilot is a privacy-first assistant that evaluates internship postings and streamlines applications:
+- **Scam Detection:** Flags red flags like upfront fees, free email domains, and direct hiring claims.
+- **Skill Alignment:** Compares student resumes against posting requirements without guesswork.
+- **Grounded Email Drafter:** Writes concise (<150 words) outreach emails using only facts from the resume.
+- **Application Tracker:** Locally tracks deadlines with color-coded urgency and weekly momentum scores.
 
-## 📁 Project Structure
+## How the Agent Decides
+The agent pipeline runs sequentially and pauses on critical decisions:
+1. **Halts on High Scam Risk:** Stops before skill matching and email drafting. Displays evidence, safety tips, and a manual "Continue anyway" override.
+2. **Suggests Skills on Very Low Match:** If match is below 30%, stops email generation and suggests missing skills under "Learn these first" with a "Draft anyway" override.
+3. **Asks Before Saving:** Never auto-saves applications. Explicitly prompts the user (`Yes`/`No`) before adding items to the tracker.
 
-```text
-internpilot/
-├── public/
-│   ├── index.html         # Main UI with resume & posting inputs, live log, disclaimer
-│   ├── tracker.html       # Application tracker & weekly activity report
-│   ├── tracker.js         # Tracker UI controller & activity score visualizer
-│   ├── style.css          # Modern light theme, single accent color, mobile-responsive
-│   ├── app.js             # UI controller, AI posting reader & email writer
-│   ├── agent.js           # Autonomous agent decision loop & interactive state machine
-│   └── tools.js           # Scam check, skill matcher, computeActivity, and local storage tools
-├── server.js              # Express server & secure POST /api/gemini proxy
-├── sample-resume.txt      # Fictional 1st-year student resume (Rohan Sharma)
-├── test-postings.json     # 7 fictional postings (genuine, scam, tricky, lowmatch)
-├── test-scam.js           # CLI test runner for scam checker
-├── test-match.js          # CLI test runner for skill matcher
-├── test-score.js          # CLI test runner for weekly activity score
-├── test-reader.js         # CLI test runner for AI posting reader
-├── test-email.js          # CLI test runner for AI email drafter
-├── test-agent-paths.js    # Integration test for agent decision paths
-├── test-browser-e2e.js    # End-to-end browser tests in Chrome via CDP
-├── package.json           # Dependencies and test scripts
-├── .gitignore             # Excludes node_modules and .env
-└── README.md              # Project documentation
-```
+## AI vs. Rule-Based Division
+- **What Gemini AI Does:**
+  - Extracts structured metadata (`role`, `company`, `deadline`, `requiredSkills`, `contactEmail`) under an injection-hardened prompt.
+  - Drafts grounded emails strictly referencing facts in the candidate's resume.
+- **What Deterministic Rules Do:**
+  - Risk scoring and weighted point math for scam detection.
+  - Token-boundary skill extraction and percentage calculation.
+  - Weekly activity scoring and prioritized next action selection.
+  - Local browser persistence in `localStorage`.
 
----
+## Scoring Rules
 
-## ⚡ Quick Start
+### Scam Check (0–100 pts)
+Points are summed and capped at 100. Levels: `<30` Low, `30–59` Medium, `≥60` High.
+- Asks for money (registration/training/kit fee, security deposit): **40 pts**
+- Asks for Aadhaar, PAN, or bank details before selection: **25 pts**
+- Free domain email address (`gmail.com`, `yahoo.com`, etc.): **20 pts**
+- Contact only on WhatsApp or Telegram: **15 pts**
+- Guaranteed job, placement, or stipend claims: **15 pts**
+- Heavy urgency (*limited seats*, *apply today*): **10 pts**
+- Direct selection with no interview or assessment: **10 pts**
+- Vague or missing company name (*a reputed MNC*): **10 pts**
 
-### 1. Install Dependencies
+### Weekly Activity Score (0–100 pts)
+Uses start-inclusive, end-exclusive time windows (`[start, end)`) over the past 7 days:
+- **Applications sent this week:** 15 pts each (max 45 pts)
+- **Applications saved this week:** 5 pts each (max 15 pts)
+- **Progress this week (Interview / Offer):** 10 pts each (max 20 pts)
+- **Deadline discipline:** Starts at 20 pts, $-10$ pts per overdue saved application (min 0 pts)
+- **Levels:** `0–29` Getting started, `30–59` Building momentum, `60–79` Active, `80–100` Very active.
+
+## Tech Stack
+- **Backend:** Node.js, Express, `dotenv`
+- **AI Integration:** Google Gemini API (`gemini-1.5-flash` REST endpoint via native `fetch`)
+- **Frontend:** Vanilla JavaScript (ES6+), HTML5, CSS3 (responsive light theme)
+- **Storage:** Browser `localStorage` (no external database required)
+
+## Setup & Running
+
+### Prerequisites
+- Node.js (v18 or higher)
+- npm
+
+### Installation
 ```bash
+cd internpilot
 npm install
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file in the `internpilot` root directory:
+### Environment Configuration
+Create a `.env` file in the `internpilot` root:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 PORT=3000
 ```
-*(The Gemini API key is securely handled by the backend server and is never sent to the browser.)*
+*(The key is handled securely on the server and is never sent to the browser).*
 
-### 3. Start the Server
+### Start the Application
 ```bash
 npm start
 ```
 Open [http://localhost:3000](http://localhost:3000) in your web browser.
 
----
+## Running Tests
+Run automated test suites from the `internpilot` directory:
+- `npm run test:scam`: Tests rule-based scam check across 7 test postings.
+- `npm run test:match`: Tests skill matcher against `sample-resume.txt`.
+- `npm run test:score`: Tests weekly activity scoring across 4 edge cases.
+- `npm run test:paths`: Tests all 3 agent decision branches and user overrides.
+- `npm run test:browser`: Runs full end-to-end browser tests in Chrome via CDP.
+- `npm run test:reader`: Tests AI posting extraction *(requires server running)*.
+- `npm run test:email`: Tests AI email drafting *(requires server running)*.
 
-## 🧪 Testing
+## Privacy & Responsible Use
+- **Client-Side Privacy:** Your resume text is stored only in browser memory and local storage.
+- **Minimal AI Data Sharing:** Posting and resume text are sent to the Gemini API only when running the agent.
+- **Human in the Loop:** InternPilot never sends emails automatically; users must review, edit, and click send in their own email client.
+- **Advisory Only:** Scam checks identify suspicious patterns, not legal proof. Always independently verify employers.
 
-You can run each component's test suite independently via npm:
+## Known Limitations
+- **Keyword Skill Extraction:** Keyword tokenization can miss implied skills or novel terminology.
+- **Scam Detection Scope:** Unlisted scam variations may score low; manual verification remains essential.
+- **API Rate Limits:** Free-tier Gemini keys have request quotas and concurrency limits.
 
-### Rule-Based Tests (No API key required)
-- **Scam Checker Test**: Evaluates all 7 postings against risk rules and prints evidence phrases:
-  ```bash
-  npm run test:scam
-  ```
-- **Skill Matcher Test**: Matches `sample-resume.txt` against all 7 postings:
-  ```bash
-  npm run test:match
-  ```
-- **Weekly Activity Score Test**: Evaluates `computeActivity` on fixed cases with fixed dates and breakdowns:
-  ```bash
-  npm run test:score
-  ```
-- **Decision Paths Integration Test**: Tests all 3 agent branches and user overrides:
-  ```bash
-  npm run test:paths
-  ```
-- **Real Chrome Browser E2E Test**: Drives live browser clicks and verifies all UI views:
-  ```bash
-  npm run test:browser
-  ```
+## Screenshots
+- `docs/screenshot-main.png`: Main analysis view with live decision log.
+- `docs/screenshot-scam.png`: High risk scam detection warning and safety tips.
+- `docs/screenshot-tracker.png`: Application tracker and weekly activity report.
 
-### AI-Powered Tests (Requires server running & `GEMINI_API_KEY` set)
-1. Start the server in one terminal: `npm start`
-2. Run the tests in another terminal:
-   - **AI Posting Reader Test**:
-     ```bash
-     npm run test:reader
-     ```
-   - **AI Email Drafter Test**:
-     ```bash
-     npm run test:email
-     ```
+## Future Ideas
+- Direct PDF/DOCX resume file upload parser.
+- Company domain reputation checks via WHOIS and public registry lookups.
+- Calendar export integration for approaching internship deadlines.
 
----
-
-## 🧠 Core Features & Architecture
-
-### 1. Rule-Based Scam Checker (`tools.js`)
-- Weighted point scoring system capped at 100:
-  - Asks for money (fees, kit charges, security deposits): **40 pts**
-  - Sensitive identity / financial details before selection (Aadhaar, PAN, bank): **25 pts**
-  - Free domain email addresses (`@gmail.com`, etc.): **20 pts**
-  - Contact exclusively on WhatsApp or Telegram: **15 pts**
-  - Guaranteed placement / 100% job claims: **15 pts**
-  - Heavy urgency (*limited seats*, *apply today*): **10 pts**
-  - Direct selection without assessment: **10 pts**
-  - Vague company identity (*a reputed MNC*): **10 pts**
-- Risk Levels:
-  - **Low Risk** (< 30 pts)
-  - **Medium Risk** (30 - 59 pts)
-  - **High Risk** ($\ge$ 60 pts)
-
-### 2. Rule-Based Skill Matcher (`tools.js`)
-- Curated list of ~60 common internship skills with an alias dictionary.
-- Boundary-aware token matching (e.g. `c++`, `c#`, `node.js`, `ui/ux`, avoiding `"java"` inside `"javascript"`).
-- Levels: `< 30%` ("very low"), `30% - 59%` ("low"), `$\ge$ 60%` ("good").
-
-### 3. AI Posting Reader (`app.js`)
-- Structured extraction using Gemini (`role`, `company`, `deadline`, `contactEmail`, `requiredSkills`, `stipend`).
-- Injection-hardened prompt declaring input text as untrusted data.
-- Built-in 20-second timeout with single-attempt retry and fallback to keyword extraction.
-
-### 4. Grounded AI Email Writer (`app.js`)
-- Generates polite, professional outreach strictly under 150 words.
-- Strictly forbidden from inventing skills, coursework, or experiences not present in the resume.
-- User retains full agency: provides editable inputs, a copy button, and an `"Open in my email app"` `mailto:` button. The application **never** sends emails automatically.
-
-### 5. Autonomous Agent Loop (`agent.js`)
-- State machine evaluating input step-by-step with explicit `Decision:` logs:
-  - **High Scam Risk**: Halts execution, presents safety tips, and offers a *"Continue anyway"* override.
-  - **Low Skill Match (< 30%)**: Halts execution, generates a *"Learn these first"* list of missing skills, and offers a *"Draft anyway"* override.
-  - **Application Tracker**: Prompts the user before saving (`Yes` / `No`) to `localStorage`. Never saves silently.
-
----
-
-## 🛡️ Disclaimer
-*Scam check shows warning signs, not proof. Verify the company independently.*
+## Team
+- **Team Member 1:** [Name / Role Placeholder]
+- **Team Member 2:** [Name / Role Placeholder]
+- **Team Member 3:** [Name / Role Placeholder]
