@@ -55,14 +55,18 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   padding: 1.5rem 1rem;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 .app-container {
   max-width: 900px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  overflow-x: hidden;
 }
 
 /* Header */
@@ -129,6 +133,72 @@ body {
   background: var(--accent);
   color: #ffffff;
   border-color: var(--accent);
+}
+
+/* Accessible minimum touch target for buttons & interactive controls */
+button,
+.btn-primary,
+.btn-secondary,
+.btn-resume,
+.nav-link-btn,
+select,
+.status-dropdown,
+.btn-delete {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+/* Demo Mode Toggle & Badge */
+.demo-mode-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.toggle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+  min-height: 44px;
+}
+
+.toggle-control input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.badge-demo {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+}
+
+/* Spinner for AI loading states */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--accent-border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Sample Loader Bar */
@@ -714,6 +784,11 @@ textarea:focus {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.15s ease;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-delete:hover {
@@ -1111,16 +1186,85 @@ textarea:focus {
 }
 
 @media (max-width: 600px) {
-  .tracker-item {
+  body {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .header-nav {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .nav-link-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .sample-loader-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.75rem;
+  }
+
+  .sample-group {
+    min-width: 0;
+    width: 100%;
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .sample-group select {
+    width: 100%;
+  }
+
+  .demo-mode-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .action-section button {
+    width: 100%;
+  }
+
+  .email-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tracker-item {
+    flex-direction: column;
+    align-items: flex-start;
+    word-break: break-word;
+  }
+
   .tracker-item-controls {
     width: 100%;
     justify-content: space-between;
     margin-top: 0.4rem;
     padding-top: 0.4rem;
     border-top: 1px solid var(--border-light);
+  }
+
+  .summary-cards-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .activity-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .score-display-block {
+    width: 100%;
   }
 }
 

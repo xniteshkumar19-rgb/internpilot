@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InternPilot</title>
+  <title>InternPilot - Smart Internship Assistant & Scam Checker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,7 +17,7 @@
         </div>
         <p class="tagline">Smart rule-based verification, skill alignment, and tailored outreach for student internships.</p>
       </div>
-      <div class="header-nav">
+      <nav class="header-nav" aria-label="Main Navigation">
         <a href="index.html" class="nav-link-btn active">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Run agent
@@ -25,11 +26,11 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           My tracker
         </a>
-      </div>
+      </nav>
     </header>
 
-    <!-- Quick Load Sample Controls -->
-    <section class="sample-loader-bar">
+    <!-- Quick Load Sample Controls & Demo Mode Bar -->
+    <section class="sample-loader-bar" aria-label="Sample and Demo Controls">
       <div class="sample-group">
         <label for="sample-posting-select">Load sample posting:</label>
         <select id="sample-posting-select">
@@ -40,6 +41,13 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Load Sample 1st-Year Resume
       </button>
+      <div class="demo-mode-group">
+        <label class="toggle-control" for="demo-mode-toggle">
+          <input type="checkbox" id="demo-mode-toggle">
+          <span>Demo mode (saved AI results)</span>
+        </label>
+        <span id="demo-badge" class="badge badge-demo" style="display: none;">Demo mode: using saved results</span>
+      </div>
     </section>
 
     <!-- Main Input Section -->
@@ -47,7 +55,7 @@
       <!-- Resume Card -->
       <div class="card input-card">
         <div class="card-header">
-          <h2>Your Resume</h2>
+          <h2><label for="resume-input">Your Resume</label></h2>
           <span class="card-subtitle">Paste your resume text below</span>
         </div>
         <textarea 
@@ -60,7 +68,7 @@
       <!-- Job Posting Card -->
       <div class="card input-card">
         <div class="card-header">
-          <h2>Job Posting</h2>
+          <h2><label for="posting-input">Job Posting</label></h2>
           <span class="card-subtitle">Paste the internship description below</span>
         </div>
         <textarea 
@@ -84,15 +92,15 @@
     </section>
 
     <!-- Live Log Panel -->
-    <section class="card live-log-card">
+    <section class="card live-log-card" aria-label="Agent Execution Live Log">
       <div class="card-header log-header">
         <div class="log-title-wrap">
-          <span class="live-dot"></span>
+          <span class="live-dot" aria-hidden="true"></span>
           <h2>Live Log</h2>
         </div>
         <span class="card-subtitle" id="log-status-text">Ready to analyze</span>
       </div>
-      <div id="live-log" class="live-log-container">
+      <div id="live-log" class="live-log-container" aria-live="polite">
         <div class="log-empty-state">
           Click <strong>"Run InternPilot"</strong> to inspect the posting for risks, calculate skill alignment, and generate a draft.
         </div>
@@ -102,7 +110,7 @@
     <!-- Required Disclaimer Footer -->
     <footer class="app-footer">
       <p class="disclaimer-text">
-        <strong>Disclaimer:</strong> Scam check shows warning signs, not proof. Verify the company independently.
+        InternPilot gives warning signs, not proof. Always verify a company yourself. Your resume stays in your browser; posting and resume text are sent to Google's Gemini API only when you run the agent.
       </p>
     </footer>
   </div>

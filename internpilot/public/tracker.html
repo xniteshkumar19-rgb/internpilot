@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InternPilot - My Tracker</title>
+  <title>InternPilot - Application Tracker & Activity Score</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,7 +18,7 @@
         </div>
         <p class="tagline">Track applications, monitor weekly activity, and stay on top of deadlines.</p>
       </div>
-      <div class="header-nav">
+      <nav class="header-nav" aria-label="Main Navigation">
         <a href="index.html" class="nav-link-btn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Run agent
@@ -26,7 +27,7 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           My tracker
         </a>
-      </div>
+      </nav>
     </header>
 
     <!-- Tracker Actions Bar -->
@@ -144,10 +145,10 @@
       </div>
     </main>
 
-    <!-- Footer Disclaimer -->
+    <!-- Required Disclaimer Footer -->
     <footer class="app-footer">
       <p class="disclaimer-text">
-        <strong>Disclaimer:</strong> Scam check shows warning signs, not proof. Verify the company independently.
+        InternPilot gives warning signs, not proof. Always verify a company yourself. Your resume stays in your browser; posting and resume text are sent to Google's Gemini API only when you run the agent.
       </p>
     </footer>
   </div>

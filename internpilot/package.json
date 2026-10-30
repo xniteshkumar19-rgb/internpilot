@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "build:demo-cache": "node generate-demo-cache.js",
     "test:scam": "node test-scam.js",
     "test:match": "node test-match.js",
     "test:reader": "node test-reader.js",

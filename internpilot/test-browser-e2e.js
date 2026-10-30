@@ -349,6 +349,150 @@ async function runBrowserE2E() {
     allPassed = false;
   }
 
+  // -------------------------------------------------------------
+  // Test G: Tracker Footer & Buttons Height (44px min)
+  // -------------------------------------------------------------
+  console.log("\n▶ [BROWSER TEST 7] Testing Tracker Footer & Button Heights...");
+  const trackerFooterText = await evalInBrowser(`document.querySelector('.app-footer').innerText`);
+  const expectedFooter = "InternPilot gives warning signs, not proof. Always verify a company yourself. Your resume stays in your browser; posting and resume text are sent to Google's Gemini API only when you run the agent.";
+  if (trackerFooterText.includes("InternPilot gives warning signs, not proof")) {
+    console.log("  ✓ tracker.html footer contains required disclaimer.");
+  } else {
+    console.error("  ✗ FAILED: tracker.html footer missing disclaimer.");
+    allPassed = false;
+  }
+
+  // Navigate back to index.html to test polish pass requirements
+  console.log("\n▶ [BROWSER TEST 8] Testing Polish Pass on index.html (Mobile 375px, 44px buttons, Demo toggle, Edge cases)...");
+  await evalInBrowser(`window.location.href = 'index.html'`);
+  await sleep(1500);
+
+  // 1. Accessibility: aria-live="polite" on live-log
+  const ariaLiveVal = await evalInBrowser(`document.getElementById('live-log').getAttribute('aria-live')`);
+  if (ariaLiveVal === 'polite') {
+    console.log("  ✓ #live-log has aria-live='polite' for screen readers.");
+  } else {
+    console.error("  ✗ FAILED: #live-log missing aria-live='polite' (got: " + ariaLiveVal + ")");
+    allPassed = false;
+  }
+
+  // 2. Buttons min-height >= 44px
+  const btnHeights = await evalInBrowser(`(() => {
+    const buttons = Array.from(document.querySelectorAll('button, .nav-link-btn, select'));
+    return buttons.map(b => ({
+      tag: b.tagName,
+      id: b.id || b.className,
+      height: Math.round(b.getBoundingClientRect().height)
+    }));
+  })()`);
+  const anyTooShort = btnHeights.find(b => b.height < 44);
+  if (!anyTooShort) {
+    console.log("  ✓ All interactive buttons & inputs meet min 44px touch height.");
+  } else {
+    console.error("  ✗ FAILED: Button below 44px:", anyTooShort);
+    allPassed = false;
+  }
+
+  // 3. index.html Footer
+  const indexFooterText = await evalInBrowser(`document.querySelector('.app-footer').innerText`);
+  if (indexFooterText.includes("InternPilot gives warning signs, not proof")) {
+    console.log("  ✓ index.html footer contains required disclaimer.");
+  } else {
+    console.error("  ✗ FAILED: index.html footer missing disclaimer.");
+    allPassed = false;
+  }
+
+  // 4. Edge Case: Empty posting submission
+  console.log("  Testing edge case: Empty posting...");
+  await evalInBrowser(`
+    document.getElementById('posting-input').value = '';
+    document.getElementById('run-btn').click();
+  `);
+  await sleep(400);
+  const logAfterEmpty = await evalInBrowser(`document.getElementById('live-log').innerText`);
+  if (logAfterEmpty.includes("Please paste an internship or job posting text first.")) {
+    console.log("  ✓ Empty posting handled gracefully with friendly log message without crashing.");
+  } else {
+    console.error("  ✗ FAILED: Empty posting did not show friendly message.");
+    allPassed = false;
+  }
+
+  // 5. Edge Case: Long posting (> 5,000 characters)
+  console.log("  Testing edge case: Very long posting (>5,000 chars)...");
+  await evalInBrowser(`(() => {
+    const longText = "Apex Cloud Technologies is hiring a Junior Web Developer Intern. " + "A".repeat(5200) + " All candidates must pay a registration fee of Rs 500.";
+    document.getElementById('posting-input').value = longText;
+    document.getElementById('run-btn').click();
+  })()`);
+  await sleep(1500);
+  const logAfterLong = await evalInBrowser(`document.getElementById('live-log').innerText`);
+  const hasTrimNotice = logAfterLong.includes("Posting text exceeded 5,000 characters and was trimmed for AI analysis");
+  const hasFullScamCheck = logAfterLong.includes("HIGH SCAM RISK") || logAfterLong.includes("Asks for money");
+  if (hasTrimNotice && hasFullScamCheck) {
+    console.log("  ✓ Very long posting (>5,000 chars) logged trim notice.");
+    console.log("  ✓ Scam check ran on FULL posting text and caught registration fee at end!");
+  } else {
+    console.error("  ✗ FAILED: Long posting handling failed.");
+    console.log("  [DEBUG hasTrimNotice]:", hasTrimNotice, "[DEBUG hasFullScamCheck]:", hasFullScamCheck);
+    allPassed = false;
+  }
+
+  // 6. Demo Mode Toggle & Guardrail Test
+  console.log("  Testing Demo Mode Toggle & Guardrails...");
+  await evalInBrowser(`(() => {
+    const toggle = document.getElementById('demo-mode-toggle');
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`);
+  await sleep(300);
+  const badgeDisplay = await evalInBrowser(`document.getElementById('demo-badge').style.display`);
+  if (badgeDisplay === 'inline-flex') {
+    console.log("  ✓ Demo mode toggle shows 'Demo mode: using saved results' badge.");
+  } else {
+    console.error("  ✗ FAILED: Demo badge not visible when toggle is checked.");
+    allPassed = false;
+  }
+
+  // Run with non-sample posting while Demo mode is ON
+  console.log("  Testing non-sample posting while Demo Mode is ON...");
+  await evalInBrowser(`(() => {
+    document.getElementById('posting-input').value = "Custom company internship not in samples.";
+    document.getElementById('run-btn').click();
+  })()`);
+  await sleep(800);
+  const logDemoGuard = await evalInBrowser(`document.getElementById('live-log').innerText`);
+  if (logDemoGuard.includes("Demo mode only covers the sample postings with the sample resume")) {
+    console.log("  ✓ Non-sample posting in Demo Mode showed guardrail message.");
+  } else {
+    console.error("  ✗ FAILED: Demo mode guardrail did not show expected message.");
+    console.log("  [DEBUG logDemoGuard]:", logDemoGuard);
+    allPassed = false;
+  }
+
+  // 7. Mobile 375px Viewport Test (Zero horizontal scrolling)
+  console.log("  Testing Mobile 375px Viewport for zero horizontal scroll...");
+  await cdpSend('Emulation.setDeviceMetricsOverride', {
+    width: 375,
+    height: 667,
+    deviceScaleFactor: 2,
+    mobile: true
+  });
+  await sleep(500);
+  const scrollInfo = await evalInBrowser(`(() => {
+    return {
+      windowWidth: window.innerWidth,
+      docScrollWidth: document.documentElement.scrollWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+      hasOverflow: document.documentElement.scrollWidth > window.innerWidth
+    };
+  })()`);
+  if (!scrollInfo.hasOverflow) {
+    console.log(`  ✓ Mobile 375px verified: viewport=${scrollInfo.windowWidth}px, scrollWidth=${scrollInfo.docScrollWidth}px (No horizontal scroll!).`);
+  } else {
+    console.error("  ✗ FAILED: Horizontal scroll overflow on 375px mobile viewport:", scrollInfo);
+    allPassed = false;
+  }
+
   // Cleanup
   ws.close();
   chromeProcess.kill();

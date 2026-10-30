@@ -2,10 +2,10 @@
  * InternPilot - Autonomous Agent Loop with Real Decisions
  * 
  * Manages the sequential evaluation pipeline:
- * 1. Read Posting (AI extraction with fallback)
- * 2. Scam Check (Rule-based risk scoring & decision halts)
- * 3. Skill Matcher (Alignment calculation & "Learn these first" halts)
- * 4. Email Drafter (Grounded cover email generation)
+ * 1. Read Posting (AI extraction with trimmed 5000 char text or demo cache)
+ * 2. Scam Check (Rule-based risk scoring on FULL text & decision halts)
+ * 3. Skill Matcher (Alignment calculation, empty resume checks & "Learn these first" halts)
+ * 4. Email Drafter (Grounded cover email generation or graceful skip on failure)
  * 5. Application Tracker (Interactive prompt, never auto-saves)
  */
 
@@ -13,6 +13,11 @@
 let getScamCheck = () => (typeof scamCheck !== "undefined" ? scamCheck : (typeof require !== "undefined" ? require("./tools.js").scamCheck : null));
 let getMatchSkills = () => (typeof matchSkills !== "undefined" ? matchSkills : (typeof require !== "undefined" ? require("./tools.js").matchSkills : null));
 let getSaveApplication = () => (typeof saveApplication !== "undefined" ? saveApplication : (typeof require !== "undefined" ? require("./tools.js").saveApplication : null));
+
+function normalizeText(str) {
+  if (!str) return "";
+  return String(str).trim().replace(/\r\n/g, "\n").replace(/\s+/g, " ");
+}
 
 async function runAgent(resumeText, postingText, log, options = {}) {
   const _scamCheck = getScamCheck();
@@ -30,6 +35,69 @@ async function runAgent(resumeText, postingText, log, options = {}) {
 
   const startStep = options.startStep || "read";
 
+  // Check: Empty posting
+  if (!state.postingText || !state.postingText.trim()) {
+    log({
+      type: "step-error",
+      text: "No posting text provided. Please paste an internship posting."
+    });
+    return state;
+  }
+
+  // Trim posting to 5,000 characters for AI calls only
+  const isLongPosting = state.postingText.length > 5000;
+  const textForAI = isLongPosting ? state.postingText.substring(0, 5000) : state.postingText;
+  if (isLongPosting && startStep === "read") {
+    log({
+      type: "decision",
+      text: "Posting text exceeded 5,000 characters and was trimmed for AI analysis."
+    });
+  }
+
+  // Demo mode check and cache matching
+  const isDemoMode = !!options.demoMode;
+  let cachedSample = null;
+
+  if (isDemoMode) {
+    const demoCache = options.demoCache;
+    const sampleResumeText = options.sampleResumeText || demoCache?.sampleResumeText || "";
+
+    const normResume = normalizeText(state.resumeText);
+    const normSampleResume = normalizeText(sampleResumeText);
+    const resumeMatches = normResume.length > 0 && normSampleResume.length > 0 && normResume === normSampleResume;
+
+    const normPosting = normalizeText(state.postingText);
+
+    if (demoCache && demoCache.postings) {
+      // Check by samplePostingId if passed
+      if (options.samplePostingId && demoCache.postings[options.samplePostingId]) {
+        const candidate = demoCache.postings[options.samplePostingId];
+        if (normalizeText(candidate.postingText) === normPosting || normalizeText(candidate.text) === normPosting) {
+          cachedSample = candidate;
+        }
+      }
+
+      // Otherwise find by posting text match across all cached samples
+      if (!cachedSample) {
+        for (const key of Object.keys(demoCache.postings)) {
+          const candidate = demoCache.postings[key];
+          if (normalizeText(candidate.postingText) === normPosting || normalizeText(candidate.text) === normPosting) {
+            cachedSample = candidate;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!cachedSample || !resumeMatches) {
+      log({
+        type: "step-error",
+        text: "Demo mode only covers the sample postings with the sample resume. Turn off Demo mode to use live AI."
+      });
+      return state;
+    }
+  }
+
   // ==========================================
   // STEP A: READ THE POSTING
   // ==========================================
@@ -37,44 +105,61 @@ async function runAgent(resumeText, postingText, log, options = {}) {
     log({
       type: "step-start",
       title: "Reading the posting...",
-      icon: "eye"
+      icon: "eye",
+      loading: true
     });
 
-    try {
-      const readerFn = typeof readPosting === "function" ? readPosting : (globalThis && globalThis.readPosting);
-      if (typeof readerFn === "function") {
-        const details = await readerFn(state.postingText);
-        state.details = details;
-
-        if (details) {
-          log({
-            type: "details-card",
-            title: "✓ Reading the posting: Details extracted",
-            data: details
-          });
-        } else {
-          log({
-            type: "decision",
-            text: "Decision: AI reader unavailable, continuing with keyword checks only."
-          });
-        }
+    if (isDemoMode && cachedSample) {
+      state.details = cachedSample.details;
+      if (state.details) {
+        log({
+          type: "details-card",
+          title: "✓ Reading the posting (Demo Mode): Details loaded",
+          data: state.details
+        });
       } else {
         log({
           type: "decision",
-          text: "Decision: Continuing with keyword checks only."
+          text: "Decision: Demo cache has no structured details, continuing with keyword checks only."
         });
       }
-    } catch (err) {
-      console.error("Step A error:", err);
-      log({
-        type: "decision",
-        text: "Decision: AI reader encountered error, continuing with keyword checks only."
-      });
+    } else {
+      try {
+        const readerFn = typeof readPosting === "function" ? readPosting : (globalThis && globalThis.readPosting);
+        if (typeof readerFn === "function") {
+          const details = await readerFn(textForAI);
+          state.details = details;
+
+          if (details) {
+            log({
+              type: "details-card",
+              title: "✓ Reading the posting: Details extracted",
+              data: details
+            });
+          } else {
+            log({
+              type: "decision",
+              text: "Decision: AI reader unavailable, continuing with keyword checks only."
+            });
+          }
+        } else {
+          log({
+            type: "decision",
+            text: "Decision: Continuing with keyword checks only."
+          });
+        }
+      } catch (err) {
+        console.error("Step A error:", err);
+        log({
+          type: "decision",
+          text: "Decision: AI reader encountered error, continuing with keyword checks only."
+        });
+      }
     }
   }
 
   // ==========================================
-  // STEP B: SCAM CHECK
+  // STEP B: SCAM CHECK (ALWAYS ON FULL TEXT)
   // ==========================================
   if (startStep === "read" || startStep === "scam") {
     log({
@@ -84,6 +169,7 @@ async function runAgent(resumeText, postingText, log, options = {}) {
     });
 
     try {
+      // Rule-based scam check runs on state.postingText (the FULL, untrimmed text)
       const scamResult = _scamCheck(state.postingText);
       state.scam = scamResult;
 
@@ -102,6 +188,7 @@ async function runAgent(resumeText, postingText, log, options = {}) {
               text: "User chose to continue anyway despite high scam risk."
             });
             return runAgent(state.resumeText, state.postingText, log, {
+              ...options,
               existingState: state,
               startStep: "match"
             });
@@ -140,6 +227,8 @@ async function runAgent(resumeText, postingText, log, options = {}) {
   // ==========================================
   // STEP C: MATCH SKILLS
   // ==========================================
+  const hasResume = !!(state.resumeText && state.resumeText.trim());
+
   if (startStep === "read" || startStep === "scam" || startStep === "match") {
     log({
       type: "step-start",
@@ -147,104 +236,153 @@ async function runAgent(resumeText, postingText, log, options = {}) {
       icon: "check-circle"
     });
 
-    try {
-      const aiSkills = state.details?.requiredSkills || null;
-      const matchResult = _matchSkills(state.resumeText, state.postingText, aiSkills);
-      state.match = matchResult;
+    if (!hasResume) {
+      log({
+        type: "decision",
+        text: "No resume text provided. Paste your resume to see skill alignment."
+      });
+      log({
+        type: "decision",
+        text: "Decision: No resume provided, skipping email drafting."
+      });
+      state.match = { percent: null, matched: [], missing: [], level: "none" };
+    } else {
+      try {
+        const aiSkills = state.details?.requiredSkills || null;
+        const matchResult = _matchSkills(state.resumeText, state.postingText, aiSkills);
+        state.match = matchResult;
 
-      if (matchResult.percent !== null && matchResult.percent < 30) {
-        // Match < 30%: STOP flow, show "Learn these first"
+        if (matchResult.percent !== null && matchResult.percent < 30) {
+          // Match < 30%: STOP flow, show "Learn these first"
+          log({
+            type: "match-halt",
+            title: `✓ Matching your skills: about ${matchResult.percent}% match (Very Low)`,
+            percent: matchResult.percent,
+            level: matchResult.level,
+            matched: matchResult.matched,
+            missing: matchResult.missing,
+            decisionText: "Decision: match is very low, suggesting skills to learn first.",
+            onDraftAnyway: () => {
+              log({
+                type: "decision",
+                text: "User chose to draft email anyway despite low match."
+              });
+              return runAgent(state.resumeText, state.postingText, log, {
+                ...options,
+                existingState: state,
+                startStep: "email"
+              });
+            }
+          });
+          return state; // STOP automatic flow
+        } else if (matchResult.percent === null) {
+          // No recognizable skills
+          log({
+            type: "match-neutral",
+            title: "✓ Matching your skills: Alignment estimate unavailable",
+            note: matchResult.note || "No recognizable skills found in the job posting.",
+            decisionText: "Decision: skill match could not be estimated, proceeding to email draft."
+          });
+        } else {
+          // Good or acceptable match
+          log({
+            type: "match-success",
+            title: `✓ Matching your skills: about ${matchResult.percent}% match (${matchResult.level.toUpperCase()})`,
+            percent: matchResult.percent,
+            level: matchResult.level,
+            matched: matchResult.matched,
+            missing: matchResult.missing,
+            decisionText: `Decision: skill match acceptable (about ${matchResult.percent}%), proceeding to email draft.`
+          });
+        }
+      } catch (err) {
+        console.error("Step C error:", err);
         log({
-          type: "match-halt",
-          title: `✓ Matching your skills: about ${matchResult.percent}% match (Very Low)`,
-          percent: matchResult.percent,
-          level: matchResult.level,
-          matched: matchResult.matched,
-          missing: matchResult.missing,
-          decisionText: "Decision: match is very low, suggesting skills to learn first.",
-          onDraftAnyway: () => {
-            log({
-              type: "decision",
-              text: "User chose to draft email anyway despite low match."
-            });
-            return runAgent(state.resumeText, state.postingText, log, {
-              existingState: state,
-              startStep: "email"
-            });
-          }
-        });
-        return state; // STOP automatic flow
-      } else if (matchResult.percent === null) {
-        // No recognizable skills
-        log({
-          type: "match-neutral",
-          title: "✓ Matching your skills: Alignment estimate unavailable",
-          note: matchResult.note || "No recognizable skills found in the job posting.",
-          decisionText: "Decision: skill match could not be estimated, proceeding to email draft."
-        });
-      } else {
-        // Good or acceptable match
-        log({
-          type: "match-success",
-          title: `✓ Matching your skills: about ${matchResult.percent}% match (${matchResult.level.toUpperCase()})`,
-          percent: matchResult.percent,
-          level: matchResult.level,
-          matched: matchResult.matched,
-          missing: matchResult.missing,
-          decisionText: `Decision: skill match acceptable (about ${matchResult.percent}%), proceeding to email draft.`
+          type: "step-error",
+          text: "Skill matching encountered an error. Proceeding to draft."
         });
       }
-    } catch (err) {
-      console.error("Step C error:", err);
-      log({
-        type: "step-error",
-        text: "Skill matching encountered an error. Proceeding to draft."
-      });
     }
   }
 
   // ==========================================
   // STEP D: DRAFT EMAIL
   // ==========================================
-  if (startStep === "read" || startStep === "scam" || startStep === "match" || startStep === "email") {
+  if (hasResume && (startStep === "read" || startStep === "scam" || startStep === "match" || startStep === "email")) {
     log({
       type: "step-start",
       title: "Drafting your email...",
-      icon: "mail"
+      icon: "mail",
+      loading: true
     });
 
-    try {
-      const emailFn = typeof draftEmail === "function" ? draftEmail : (globalThis && globalThis.draftEmail);
-      if (typeof emailFn === "function") {
-        const emailDraft = await emailFn(state.resumeText, state.details, state.match);
-        state.email = emailDraft;
-
-        if (emailDraft && (emailDraft.subject || emailDraft.body)) {
-          log({
-            type: "email-card",
-            title: "✓ Drafting your email: Draft ready for review",
-            subject: emailDraft.subject || "",
-            body: emailDraft.body || "",
-            contactEmail: state.details?.contactEmail || null
-          });
-        } else {
-          log({
-            type: "step-error",
-            text: "AI email writer unavailable at this time."
-          });
-        }
+    if (isDemoMode && cachedSample) {
+      if (cachedSample.email && (cachedSample.email.subject || cachedSample.email.body)) {
+        state.email = cachedSample.email;
+        log({
+          type: "email-card",
+          title: "✓ Drafting your email (Demo Mode): Draft ready for review",
+          subject: cachedSample.email.subject || "",
+          body: cachedSample.email.body || "",
+          contactEmail: state.details?.contactEmail || null
+        });
       } else {
         log({
           type: "step-error",
-          text: "Email writer function is not available."
+          text: "Email draft unavailable"
+        });
+        log({
+          type: "decision",
+          text: "Decision: email draft unavailable, skipping email step."
         });
       }
-    } catch (err) {
-      console.error("Step D error:", err);
-      log({
-        type: "step-error",
-        text: "Error generating draft email."
-      });
+    } else {
+      try {
+        const emailFn = typeof draftEmail === "function" ? draftEmail : (globalThis && globalThis.draftEmail);
+        if (typeof emailFn === "function") {
+          const emailDraft = await emailFn(state.resumeText, state.details, state.match);
+          state.email = emailDraft;
+
+          if (emailDraft && (emailDraft.subject || emailDraft.body)) {
+            log({
+              type: "email-card",
+              title: "✓ Drafting your email: Draft ready for review",
+              subject: emailDraft.subject || "",
+              body: emailDraft.body || "",
+              contactEmail: state.details?.contactEmail || null
+            });
+          } else {
+            // Failure or offline
+            log({
+              type: "step-error",
+              text: "Email draft unavailable"
+            });
+            log({
+              type: "decision",
+              text: "Decision: email draft unavailable, skipping email step."
+            });
+          }
+        } else {
+          log({
+            type: "step-error",
+            text: "Email draft unavailable"
+          });
+          log({
+            type: "decision",
+            text: "Decision: email draft unavailable, skipping email step."
+          });
+        }
+      } catch (err) {
+        console.error("Step D error:", err);
+        log({
+          type: "step-error",
+          text: "Email draft unavailable"
+        });
+        log({
+          type: "decision",
+          text: "Decision: email draft unavailable, skipping email step."
+        });
+      }
     }
   }
 

@@ -176,8 +176,42 @@ document.addEventListener("DOMContentLoaded", () => {
   const logStatusText = document.getElementById("log-status-text");
   const samplePostingSelect = document.getElementById("sample-posting-select");
   const loadResumeBtn = document.getElementById("load-sample-resume-btn");
+  const demoModeToggle = document.getElementById("demo-mode-toggle");
+  const demoBadge = document.getElementById("demo-badge");
 
   let testPostingsData = [];
+  let demoCacheData = null;
+  let sampleResumeRaw = null;
+
+  async function ensureDemoDataLoaded() {
+    if (!demoCacheData) {
+      try {
+        const res = await fetch("/demo-cache.json");
+        if (res.ok) demoCacheData = await res.json();
+      } catch (err) {
+        console.warn("Could not load /demo-cache.json:", err);
+      }
+    }
+    if (!sampleResumeRaw) {
+      try {
+        const res = await fetch("/api/sample-resume");
+        if (res.ok) sampleResumeRaw = await res.text();
+      } catch (err) {
+        console.warn("Could not load /api/sample-resume:", err);
+      }
+    }
+  }
+
+  if (demoModeToggle) {
+    demoModeToggle.addEventListener("change", async (e) => {
+      if (e.target.checked) {
+        if (demoBadge) demoBadge.style.display = "inline-flex";
+        await ensureDemoDataLoaded();
+      } else {
+        if (demoBadge) demoBadge.style.display = "none";
+      }
+    });
+  }
 
   // 1. Populate sample posting dropdown from /api/test-postings
   fetch("/api/test-postings")
@@ -238,6 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
       case "step-start":
         stepDiv.innerHTML = `
           <div class="log-step-header">
+            ${entry.loading ? `<span class="spinner" aria-hidden="true"></span>` : `<span class="log-tick" aria-hidden="true">✓</span>`}
             <span>${escapeHtml(entry.title)}</span>
           </div>
         `;
@@ -257,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stepDiv.innerHTML = `
           <div class="log-step-header">
-            <span class="log-tick">✓</span>
+            <span class="log-tick" aria-hidden="true">✓</span>
             <span>${escapeHtml(entry.title)}</span>
           </div>
           <div class="details-card">
@@ -289,9 +324,9 @@ document.addEventListener("DOMContentLoaded", () => {
       case "scam-clean":
         stepDiv.innerHTML = `
           <div class="log-step-header">
-            <span class="log-tick">✓</span>
+            <span class="log-tick" aria-hidden="true">✓</span>
             <span>${escapeHtml(entry.title)}</span>
-            <span class="badge badge-success">Risk Score: ${entry.score}/100</span>
+            <span class="badge badge-success">LOW RISK (Score: ${entry.score}/100)</span>
           </div>
           <span class="log-decision">${escapeHtml(entry.decisionText)}</span>
         `;
@@ -304,9 +339,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stepDiv.innerHTML = `
           <div class="log-step-header">
-            <span class="log-tick">✓</span>
+            <span class="log-tick" aria-hidden="true">✓</span>
             <span>${escapeHtml(entry.title)}</span>
-            <span class="badge badge-warning">Risk Score: ${entry.score}/100</span>
+            <span class="badge badge-warning">MEDIUM RISK (Score: ${entry.score}/100)</span>
           </div>
           <div class="alert-card alert-warning">
             <p><strong>Warning Signs Detected:</strong></p>
@@ -324,8 +359,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stepDiv.innerHTML = `
           <div class="log-step-header">
-            <span class="badge badge-danger">High Scam Risk</span>
-            <span>Risk Score: ${entry.score}/100</span>
+            <span class="badge badge-danger">HIGH SCAM RISK</span>
+            <span class="badge badge-danger">Risk Score: ${entry.score}/100</span>
           </div>
           <div class="alert-card alert-danger">
             <p><strong>Critical Risk Triggers Identified:</strong></p>
@@ -364,9 +399,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stepDiv.innerHTML = `
           <div class="log-step-header">
-            <span class="log-tick">✓</span>
+            <span class="log-tick" aria-hidden="true">✓</span>
             <span>${escapeHtml(entry.title)}</span>
-            <span class="badge badge-danger">${entry.percent !== null ? `about ${entry.percent}%` : "No match"}</span>
+            <span class="badge badge-danger">${entry.percent !== null ? `LOW MATCH (about ${entry.percent}%)` : "LOW MATCH (No match)"}</span>
           </div>
           <div class="alert-card alert-warning">
             <p><strong>Matched Skills:</strong></p>
@@ -410,9 +445,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stepDiv.innerHTML = `
           <div class="log-step-header">
-            <span class="log-tick">✓</span>
+            <span class="log-tick" aria-hidden="true">✓</span>
             <span>${escapeHtml(entry.title)}</span>
-            <span class="badge badge-success">about ${entry.percent}%</span>
+            <span class="badge badge-success">GOOD MATCH (about ${entry.percent}%)</span>
           </div>
           <div style="font-size: 0.8rem; margin: 0.2rem 0;">
             <div><strong>Matched skills:</strong> <div class="skill-chips-wrap" style="display:inline-flex;">${matchedHtml}</div></div>
@@ -543,19 +578,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const resumeText = resumeInput.value.trim();
     const postingText = postingInput.value.trim();
 
+    // Reset log
+    liveLog.innerHTML = "";
+
     if (!postingText) {
-      alert("Please paste an internship or job posting text first.");
+      addLogEntry({
+        type: "step-error",
+        text: "Please paste an internship or job posting text first."
+      });
       postingInput.focus();
       return;
     }
 
-    // Reset log
-    liveLog.innerHTML = "";
     runBtn.disabled = true;
     logStatusText.textContent = "Analyzing posting...";
 
+    const isDemoMode = !!(demoModeToggle && demoModeToggle.checked);
+    if (isDemoMode) {
+      await ensureDemoDataLoaded();
+    }
+
     try {
-      await runAgent(resumeText, postingText, addLogEntry);
+      await runAgent(resumeText, postingText, addLogEntry, {
+        demoMode: isDemoMode,
+        demoCache: demoCacheData,
+        sampleResumeText: sampleResumeRaw,
+        samplePostingId: samplePostingSelect.value
+      });
     } catch (err) {
       console.error("Agent error:", err);
       addLogEntry({
