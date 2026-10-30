@@ -9,7 +9,8 @@
     "test:match": "node test-match.js",
     "test:reader": "node test-reader.js",
     "test:email": "node test-email.js",
-    "test:paths": "node test-agent-paths.js"
+    "test:paths": "node test-agent-paths.js",
+    "test:browser": "node test-browser-e2e.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

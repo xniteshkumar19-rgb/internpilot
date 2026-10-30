@@ -341,11 +341,11 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <span class="log-decision">${escapeHtml(entry.decisionText)}</span>
           <div>
-            <button type="button" class="btn-secondary btn-resume">Continue anyway (at your own risk)</button>
+            <button type="button" class="btn-secondary btn-resume btn-continue-anyway">Continue anyway (at your own risk)</button>
           </div>
         `;
 
-        const continueBtn = stepDiv.querySelector(".btn-resume");
+        const continueBtn = stepDiv.querySelector(".btn-continue-anyway");
         continueBtn.addEventListener("click", () => {
           continueBtn.disabled = true;
           continueBtn.textContent = "Resumed";
@@ -376,11 +376,11 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           <span class="log-decision">${escapeHtml(entry.decisionText)}</span>
           <div>
-            <button type="button" class="btn-secondary btn-resume">Draft anyway</button>
+            <button type="button" class="btn-secondary btn-resume btn-draft-anyway">Draft anyway</button>
           </div>
         `;
 
-        const draftBtn = stepDiv.querySelector(".btn-resume");
+        const draftBtn = stepDiv.querySelector(".btn-draft-anyway");
         draftBtn.addEventListener("click", () => {
           draftBtn.disabled = true;
           draftBtn.textContent = "Drafting...";
