@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InternPilot - AI Agent for Internship Applications</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Sora:wght@400..800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0e1424;--surface:#172036;--line:#273452;
+      --text:#e9edf5;--muted:#9aa6bd;
+      --accent:#3dd6c0;--accent-ink:#06332d;
+      --danger:#ff6b6b;--ok:#5be39b;--warn:#ffc857;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth;scroll-padding-top:70px}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:"DM Sans",system-ui,sans-serif;line-height:1.6}
+    h1,h2,h3{font-family:"Sora","DM Sans",sans-serif;line-height:1.2;margin:0 0 .6rem}
+    a{color:inherit;text-decoration:none}
+
+    :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+    #progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--accent);z-index:200}
+
+    nav{position:sticky;top:0;z-index:100;display:flex;justify-content:space-between;align-items:center;
+      padding:.8rem 1.5rem;background:rgba(14,20,36,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+    .brand{font-family:"Sora",sans-serif;font-weight:700;font-size:1.1rem}
+    .brand span{color:var(--accent)}
+    nav .links{display:flex;gap:1.4rem;font-size:.95rem;color:var(--muted)}
+    nav .links a:hover{color:var(--text)}
+
+    section{max-width:960px;margin:0 auto;padding:4.5rem 1.5rem}
+    .hero{min-height:85vh;display:flex;flex-direction:column;justify-content:center;align-items:flex-start}
+    .hero h1{font-size:clamp(2.2rem,6vw,3.8rem);max-width:14ch}
+    .hero p{color:var(--muted);max-width:46ch;font-size:1.1rem;margin:0 0 1.6rem}
+
+    .btn{display:inline-block;border:0;cursor:pointer;font:inherit;font-weight:600;
+      background:var(--accent);color:var(--accent-ink);padding:.8rem 1.5rem;border-radius:10px;transition:transform .15s}
+    .btn:hover{transform:translateY(-2px)}
+    .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+
+    .scroll-down{margin-top:3rem;font-size:1.8rem;color:var(--muted);animation:bounce 1.6s infinite}
+    @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+    .card p{margin:0;color:var(--muted)}
+
+    .timeline{list-style:none;margin:0;padding:0 0 0 1.4rem;border-left:2px solid var(--line)}
+    .timeline li{position:relative;padding:0 0 1.4rem 1rem}
+    .timeline li::before{content:"";position:absolute;left:-1.95rem;top:.45rem;width:.7rem;height:.7rem;border-radius:50%;background:var(--accent)}
+    .timeline b{display:block}
+    .timeline span{color:var(--muted)}
+
+    .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+    .reveal.visible{opacity:1;transform:none}
+
+    textarea{width:100%;min-height:150px;resize:vertical;background:var(--surface);color:var(--text);
+      border:1px solid var(--line);border-radius:var(--radius);padding:.9rem;font:inherit}
+    label{display:block;font-weight:600;margin-bottom:.4rem}
+    .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-bottom:1rem}
+    .actions{display:flex;gap:.8rem;flex-wrap:wrap}
+
+    #log{margin-top:1.4rem;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+    .step{display:flex;align-items:center;gap:.8rem;padding:.8rem 1.1rem;border-top:1px solid var(--line);color:var(--muted)}
+    .step:first-child{border-top:0}
+    .step .icon{width:1.2rem;text-align:center}
+    .step .result{margin-left:auto;font-size:.9rem}
+    .step.running{color:var(--text)}
+    .step.running .icon{display:inline-block;animation:spin 1s linear infinite}
+    .step.done{color:var(--text)}
+    .step.done .icon{color:var(--ok)}
+    .step.stopped .icon{color:var(--danger)}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    #results{margin-top:1.2rem}
+    .risk-high{border-color:var(--danger)}
+    .risk-high h3{color:var(--danger)}
+    .bar{height:8px;background:var(--line);border-radius:4px;margin:.6rem 0}
+    .bar i{display:block;height:100%;background:var(--ok);border-radius:4px;transition:width .8s}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{text-align:left;padding:.7rem .4rem;border-top:1px solid var(--line)}
+    th{color:var(--muted);font-weight:500;border-top:0}
+    .tag{padding:.15rem .6rem;border-radius:8px;font-size:.85rem;background:var(--line)}
+    .tag.applied{background:#064e3b;color:#a7f3d0}
+    .tag.saved{background:#1e293b;color:#cbd5e1}
+    .tag.interview{background:#78350f;color:#fde68a}
+
+    footer{border-top:1px solid var(--line);padding:2rem 1.5rem;text-align:center;color:var(--muted);font-size:.9rem}
+
+    @media (max-width:640px){nav .links{display:none}}
+    @media (prefers-reduced-motion:reduce){
+      html{scroll-behavior:auto}
+      .reveal{opacity:1;transform:none;transition:none}
+      .scroll-down,.step.running .icon{animation:none}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Scroll Progress Indicator -->
+  <div id="progress"></div>
+
+  <!-- Sticky Navbar -->
+  <nav>
+    <div class="brand">Intern<span>Pilot</span></div>
+    <div class="links">
+      <a href="#problem">Problem</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#demo">Live Agent</a>
+      <a href="#tracker">Tracker</a>
+      <a href="index.html">App</a>
+      <a href="presentation.html">Pitch</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <h1>Fake internships. Missed deadlines. One AI pilot.</h1>
+    <p>An autonomous desktop agent that screens job postings for scams, calculates honest skill alignment, and keeps you on top of deadlines.</p>
+    <div class="actions">
+      <a href="#demo" class="btn">Try Live Agent</a>
+      <a href="tracker.html" class="btn ghost">Open Tracker</a>
+    </div>
+    <div class="scroll-down">↓</div>
+  </section>
+
+  <!-- Problem Section -->
+  <section id="problem" class="reveal">
+    <h2>The Freshers' Problem</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Predatory Scams</h3>
+        <p>Fake postings demanding "registration fees", kit charges, or sensitive bank details before any interview.</p>
+      </div>
+      <div class="card">
+        <h3>Unclear Skill Fit</h3>
+        <p>First-year students guessing whether their coursework qualifies them for competitive roles.</p>
+      </div>
+      <div class="card">
+        <h3>Scattered Deadlines</h3>
+        <p>Application deadlines buried across chaotic WhatsApp groups, Telegram channels, and scattered notes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pipeline / How It Works -->
+  <section id="pipeline" class="reveal">
+    <h2>How the Agent Decides</h2>
+    <ul class="timeline">
+      <li>
+        <b>1. Ingest & Read Posting</b>
+        <span>Google Gemini parses unstructured requirements under prompt injection isolation.</span>
+      </li>
+      <li>
+        <b>2. Rule-Based Scam Check</b>
+        <span>Deterministic rules check for upfront fees, free email domains, and pressure tactics. Halts immediately on high risk.</span>
+      </li>
+      <li>
+        <b>3. Skill Alignment Match</b>
+        <span>Token-boundary matching compares requirements to resume. Match &lt; 30% suggests skills to learn first.</span>
+      </li>
+      <li>
+        <b>4. Grounded Cover Email</b>
+        <span>Drafts a concise (&lt;150 words) email citing only facts from the candidate's resume.</span>
+      </li>
+      <li>
+        <b>5. User Confirmation & Tracker</b>
+        <span>Never auto-saves. Asks for explicit user approval before storing to localStorage.</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Interactive Demo Section -->
+  <section id="demo" class="reveal">
+    <h2>Live Agent Interactive Demo</h2>
+    <div class="inputs">
+      <div>
+        <label for="resume-input">Your Resume</label>
+        <textarea id="resume-input" placeholder="Paste your resume or click 'Load Sample Resume'..."></textarea>
+      </div>
+      <div>
+        <label for="posting-input">Internship Posting</label>
+        <textarea id="posting-input" placeholder="Paste an internship announcement or choose a sample..."></textarea>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="run-btn" class="btn">Run InternPilot</button>
+      <button id="load-scam-btn" class="btn ghost">Sample: Scam Posting</button>
+      <button id="load-genuine-btn" class="btn ghost">Sample: Genuine Posting</button>
+      <button id="load-lowmatch-btn" class="btn ghost">Sample: Low Match</button>
+    </div>
+
+    <!-- Live Step Log -->
+    <div id="log" style="display: none;">
+      <div class="step" id="step-read">
+        <span class="icon">○</span>
+        <span>Reading the posting</span>
+        <span class="result" id="res-read">Pending</span>
+      </div>
+      <div class="step" id="step-scam">
+        <span class="icon">○</span>
+        <span>Checking for scams</span>
+        <span class="result" id="res-scam">Pending</span>
+      </div>
+      <div class="step" id="step-match">
+        <span class="icon">○</span>
+        <span>Matching skills</span>
+        <span class="result" id="res-match">Pending</span>
+      </div>
+      <div class="step" id="step-email">
+        <span class="icon">○</span>
+        <span>Drafting outreach email</span>
+        <span class="result" id="res-email">Pending</span>
+      </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div id="results"></div>
+  </section>
+
+  <!-- Tracker Preview Section -->
+  <section id="tracker" class="reveal">
+    <h2>Application Tracker Preview</h2>
+    <div class="card" style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Role</th>
+            <th>Deadline</th>
+            <th>Risk</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tracker-tbody">
+          <tr>
+            <td><strong>Apex Cloud Technologies</strong></td>
+            <td>Junior Web Developer Intern</td>
+            <td>Nov 25, 2026 (26 days left)</td>
+            <td><span class="tag" style="background:#064e3b; color:#a7f3d0;">LOW</span></td>
+            <td><span class="tag applied">Applied</span></td>
+          </tr>
+          <tr>
+            <td><strong>Vanguard Data Labs</strong></td>
+            <td>Frontend Engineering Intern</td>
+            <td>Dec 10, 2026 (41 days left)</td>
+            <td><span class="tag" style="background:#064e3b; color:#a7f3d0;">LOW</span></td>
+            <td><span class="tag interview">Interview</span></td>
+          </tr>
+          <tr>
+            <td><strong>Starlight Creative Studio</strong></td>
+            <td>Web Design Intern</td>
+            <td>Nov 20, 2026 (21 days left)</td>
+            <td><span class="tag" style="background:#78350f; color:#fde68a;">MEDIUM</span></td>
+            <td><span class="tag saved">Saved</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Footer with Required Privacy & Advisory Disclaimer -->
+  <footer>
+    InternPilot gives warning signs, not proof. Always verify a company yourself. Your resume stays in your browser; posting and resume text are sent to Google's Gemini API only when you run the agent.
+  </footer>
+
+  <!-- Scripts -->
+  <script src="tools.js"></script>
+  <script>
+    // 1. Scroll Progress Bar
+    const progressBar = document.getElementById('progress');
+    window.addEventListener('scroll', () => {
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = total > 0 ? (window.scrollY / total) * 100 : 0;
+      progressBar.style.width = progress + '%';
+    });
+
+    // 2. Scroll Reveal Animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // 3. Demo Controls & Test Postings Integration
+    const resumeInput = document.getElementById('resume-input');
+    const postingInput = document.getElementById('posting-input');
+    const runBtn = document.getElementById('run-btn');
+    const logBox = document.getElementById('log');
+    const resultsBox = document.getElementById('results');
+
+    let testPostings = [];
+    let sampleResume = "";
+
+    // Load sample resume and postings from server
+    fetch('/api/sample-resume').then(r => r.text()).then(t => {
+      sampleResume = t;
+      if (!resumeInput.value) resumeInput.value = t;
+    }).catch(() => {});
+
+    fetch('/api/test-postings').then(r => r.json()).then(p => {
+      testPostings = p;
+    }).catch(() => {});
+
+    document.getElementById('load-scam-btn').addEventListener('click', () => {
+      const p = testPostings.find(x => x.id === 'scam-1');
+      if (p) postingInput.value = p.text;
+      if (!resumeInput.value) resumeInput.value = sampleResume;
+    });
+
+    document.getElementById('load-genuine-btn').addEventListener('click', () => {
+      const p = testPostings.find(x => x.id === 'genuine-1');
+      if (p) postingInput.value = p.text;
+      if (!resumeInput.value) resumeInput.value = sampleResume;
+    });
+
+    document.getElementById('load-lowmatch-btn').addEventListener('click', () => {
+      const p = testPostings.find(x => x.id === 'lowmatch-1');
+      if (p) postingInput.value = p.text;
+      if (!resumeInput.value) resumeInput.value = sampleResume;
+    });
+
+    function sleep(ms) {
+      return new Promise(res => setTimeout(res, ms));
+    }
+
+    function setStep(id, state, text, icon = null) {
+      const el = document.getElementById(id);
+      el.className = 'step ' + state;
+      const iconEl = el.querySelector('.icon');
+      const resEl = el.querySelector('.result');
+      resEl.textContent = text;
+      if (icon) iconEl.textContent = icon;
+      else if (state === 'running') iconEl.textContent = '◌';
+      else if (state === 'done') iconEl.textContent = '✓';
+      else if (state === 'stopped') iconEl.textContent = '✕';
+    }
+
+    // Run Agent
+    runBtn.addEventListener('click', async () => {
+      const postingText = postingInput.value.trim();
+      const resumeText = resumeInput.value.trim();
+
+      if (!postingText) {
+        alert("Please paste an internship posting first.");
+        return;
+      }
+
+      runBtn.disabled = true;
+      logBox.style.display = 'block';
+      resultsBox.innerHTML = '';
+
+      setStep('step-read', 'running', 'Reading...');
+      setStep('step-scam', '', 'Pending', '○');
+      setStep('step-match', '', 'Pending', '○');
+      setStep('step-email', '', 'Pending', '○');
+
+      await sleep(600);
+      setStep('step-read', 'done', 'Details Extracted');
+
+      // Step 2: Scam Check (Rule-based)
+      setStep('step-scam', 'running', 'Evaluating rules...');
+      await sleep(600);
+      const scamRes = (typeof scamCheck === 'function') ? scamCheck(postingText) : { level: 'low', riskScore: 0, reasons: [] };
+
+      if (scamRes.level === 'high') {
+        setStep('step-scam', 'stopped', `HIGH RISK (${scamRes.riskScore}/100)`);
+        setStep('step-match', 'stopped', 'Skipped', '✕');
+        setStep('step-email', 'stopped', 'Skipped', '✕');
+
+        resultsBox.innerHTML = `
+          <div class="card risk-high" style="margin-top: 1rem;">
+            <h3>⚠ High Scam Risk Detected</h3>
+            <p style="color: var(--text); margin-bottom: 0.6rem;">
+              <strong>Triggered warning signs:</strong>
+            </p>
+            <ul style="margin: 0 0 1rem 1.2rem; color: var(--muted);">
+              ${scamRes.reasons.map(r => `<li><strong>${r.rule}</strong> (Evidence: "${r.evidence}")</li>`).join('')}
+            </ul>
+            <p style="color: var(--warn); font-size: 0.9rem;">
+              <strong>Safety advice:</strong> Never pay any registration or training fee. Never share Aadhaar or bank details before official joining.
+            </p>
+          </div>
+        `;
+        runBtn.disabled = false;
+        return;
+      }
+
+      setStep('step-scam', 'done', `${scamRes.level.toUpperCase()} RISK (${scamRes.riskScore}/100)`);
+
+      // Step 3: Skill Matching (Rule-based)
+      setStep('step-match', 'running', 'Comparing skills...');
+      await sleep(600);
+      const matchRes = (typeof matchSkills === 'function') ? matchSkills(resumeText, postingText) : { percent: 80, matched: ['HTML', 'CSS', 'JavaScript'], missing: [] };
+
+      const percent = matchRes.percent !== null ? matchRes.percent : 0;
+      setStep('step-match', 'done', `about ${percent}% match`);
+
+      if (percent < 30 && matchRes.percent !== null) {
+        setStep('step-email', 'stopped', 'Learn first', '✕');
+        resultsBox.innerHTML = `
+          <div class="card" style="margin-top: 1rem; border-color: var(--warn);">
+            <h3 style="color: var(--warn);">Alignment: about ${percent}% (Very Low)</h3>
+            <div class="bar"><i style="width: ${percent}%; background: var(--warn);"></i></div>
+            <p style="color: var(--text); margin-top: 0.6rem;"><strong>Learn these first:</strong></p>
+            <p style="color: var(--muted);">${matchRes.missing.join(', ')}</p>
+          </div>
+        `;
+        runBtn.disabled = false;
+        return;
+      }
+
+      // Step 4: Email Draft
+      setStep('step-email', 'running', 'Drafting cover email...');
+      await sleep(800);
+      setStep('step-email', 'done', 'Draft ready');
+
+      resultsBox.innerHTML = `
+        <div class="card" style="margin-top: 1rem;">
+          <h3 style="color: var(--ok);">Alignment: about ${percent}% (Good Match)</h3>
+          <div class="bar"><i style="width: ${percent}%;"></i></div>
+          <p style="color: var(--text); margin: 0.6rem 0 0.3rem;"><strong>Matched skills:</strong> ${matchRes.matched.join(', ')}</p>
+          <div style="margin-top: 1rem; background: var(--bg); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--line);">
+            <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--accent);">Draft Cover Email:</div>
+            <div style="font-size: 0.9rem; color: var(--muted); line-height: 1.5; white-space: pre-wrap;">Dear Hiring Team,
+
+I am writing to express my strong interest in the internship position. As a first-year Computer Science undergraduate with foundational skills in ${matchRes.matched.slice(0, 3).join(', ')}, I am eager to contribute to your engineering team.
+
+Thank you for your time and consideration.
+
+Best regards,
+Rohan Sharma</div>
+          </div>
+        </div>
+      `;
+
+      runBtn.disabled = false;
+    });
+  </script>
+</body>
+</html>
