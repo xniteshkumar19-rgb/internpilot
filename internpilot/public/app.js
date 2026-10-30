@@ -194,9 +194,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!demoCacheData) {
       try {
         const res = await fetch("/demo-cache.json");
-        if (res.ok) demoCacheData = await res.json();
+        if (res.ok) {
+          demoCacheData = await res.json();
+        } else {
+          console.warn("Could not load /demo-cache.json (HTTP " + res.status + ")");
+          demoCacheData = null;
+        }
       } catch (err) {
         console.warn("Could not load /demo-cache.json:", err);
+        demoCacheData = null;
       }
     }
     if (!sampleResumeRaw) {

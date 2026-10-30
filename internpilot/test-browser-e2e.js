@@ -477,6 +477,27 @@ async function runBrowserE2E() {
     allPassed = false;
   }
 
+  // Run with sample posting genuine-1 while Demo Mode is ON
+  console.log("  Testing genuine-1 sample posting while Demo Mode is ON (Offline Cache)...");
+  await evalInBrowser(`(() => {
+    document.getElementById('sample-posting-select').selectedIndex = 1;
+    document.getElementById('sample-posting-select').dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('load-sample-resume-btn').click();
+  })()`);
+  await sleep(600);
+  await evalInBrowser(`document.getElementById('run-btn').click();`);
+  await sleep(1500);
+  const logDemoGenuine = await evalInBrowser(`document.getElementById('live-log').innerText`);
+  const hasDemoDetails = logDemoGenuine.includes("Details loaded") || logDemoGenuine.includes("Reading the posting (Demo Mode)");
+  const hasDemoDraft = logDemoGenuine.includes("Draft ready for review") || logDemoGenuine.includes("Drafting your email (Demo Mode)");
+  if (hasDemoDetails && hasDemoDraft) {
+    console.log("  ✓ Demo Mode with sample posting loaded cached details and email draft without API calls!");
+  } else {
+    console.error("  ✗ FAILED: Demo Mode did not load cached results as expected.");
+    console.log("  [DEBUG logDemoGenuine]:", logDemoGenuine);
+    allPassed = false;
+  }
+
   // 7. Mobile 375px Viewport Test (Zero horizontal scrolling)
   console.log("  Testing Mobile 375px Viewport for zero horizontal scroll...");
   await cdpSend('Emulation.setDeviceMetricsOverride', {

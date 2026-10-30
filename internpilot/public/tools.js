@@ -7,12 +7,15 @@ const SCAM_RULES = [
     rule: "Asks for money",
     points: 40,
     patterns: [
-      /\bregistration fee\b/i,
-      /\bsecurity deposit\b/i,
-      /\btraining fee\b/i,
-      /\bkit charges\b/i,
-      /\bprocessing fee\b/i,
-      /\bpay\b/i
+      /\bregistration fees?\b/i,
+      /\bsecurity deposits?\b/i,
+      /\btraining fees?\b/i,
+      /\bkit charges?\b/i,
+      /\bprocessing fees?\b/i,
+      /\b(?:must|required to|have to|need to|asked to|candidates? must|applicants? must|you must)\s+pay\b/i,
+      /\bpay\s+(?:an?\s+)?(?:upfront|in\s+advance)\b/i,
+      /\bpay\s+(?:an?\s+|the\s+|any\s+|some\s+)?(?:[\w-]+\s+)?(?:fee|fees|deposit|charges?)\b/i,
+      /\bpay\s+(?:(?:₹|rs\.?|inr|\$)\s*[\d,]+\s+)?to\s+(?:secure|confirm|reserve|apply|register|join|enroll|book)\b/i
     ]
   },
   {

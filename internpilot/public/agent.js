@@ -68,7 +68,7 @@ async function runAgent(resumeText, postingText, log, options = {}) {
 
     const normPosting = normalizeText(state.postingText);
 
-    if (demoCache && demoCache.postings) {
+    if (demoCache && demoCache.postings && typeof demoCache.postings === "object") {
       // Check by samplePostingId if passed
       if (options.samplePostingId && demoCache.postings[options.samplePostingId]) {
         const candidate = demoCache.postings[options.samplePostingId];
@@ -87,6 +87,12 @@ async function runAgent(resumeText, postingText, log, options = {}) {
           }
         }
       }
+    } else {
+      log({
+        type: "step-error",
+        text: "Demo cache could not be loaded or is corrupted. Turn off Demo mode to use live AI, or run npm run build:demo-cache."
+      });
+      return state;
     }
 
     if (!cachedSample || !resumeMatches) {
