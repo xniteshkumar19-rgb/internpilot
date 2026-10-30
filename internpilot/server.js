@@ -194,11 +194,36 @@ app.post('/api/gemini', async (req, res) => {
   }
 });
 
+function resolveAssetPath(filename) {
+  const candidates = [
+    path.join(__dirname, filename),
+    path.join(process.cwd(), filename),
+    path.join(process.cwd(), 'internpilot', filename),
+    path.join(__dirname, '..', filename)
+  ];
+  for (const p of candidates) {
+    try {
+      if (fs.existsSync(p)) return p;
+    } catch {}
+  }
+  return path.join(__dirname, filename);
+}
+
+// Healthcheck & Vercel deployment probe
+app.get('/api', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'InternPilot API',
+    geminiModel: GEMINI_MODEL,
+    aiConfigured: Boolean((process.env.GEMINI_API_KEY || '').trim())
+  });
+});
+
 // 2. GET /api/test-postings
 // Serves sample postings for dropdown testing
 app.get('/api/test-postings', (req, res) => {
   try {
-    const postingsPath = path.join(__dirname, 'test-postings.json');
+    const postingsPath = resolveAssetPath('test-postings.json');
     const content = fs.readFileSync(postingsPath, 'utf8');
     res.setHeader('Content-Type', 'application/json');
     res.send(content);
@@ -212,7 +237,7 @@ app.get('/api/test-postings', (req, res) => {
 // Serves sample resume text
 app.get('/api/sample-resume', (req, res) => {
   try {
-    const resumePath = path.join(__dirname, 'sample-resume.txt');
+    const resumePath = resolveAssetPath('sample-resume.txt');
     const content = fs.readFileSync(resumePath, 'utf8');
     res.setHeader('Content-Type', 'text/plain');
     res.send(content);
@@ -222,6 +247,10 @@ app.get('/api/sample-resume', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`InternPilot server running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`InternPilot server running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
