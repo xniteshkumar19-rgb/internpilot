@@ -102,9 +102,10 @@ Run automated test suites from the `internpilot` directory:
 - **API Rate Limits:** Free-tier Gemini keys have request quotas and concurrency limits.
 
 ## Screenshots
-- `docs/screenshot-main.png`: Main analysis view with live decision log.
-- `docs/screenshot-scam.png`: High risk scam detection warning and safety tips.
-- `docs/screenshot-tracker.png`: Application tracker and weekly activity report.
+- `docs/screenshot-main.png`: Genuine posting analysis view with live decision log and email draft.
+- `docs/screenshot-scam.png`: High risk scam detection warning and essential safety tips.
+- `docs/screenshot-lowmatch.png`: Low skill match decision with "Learn these first" missing skills list.
+- `docs/screenshot-tracker.png`: Application tracker, nearest deadline sorting, and weekly activity report.
 
 ## Future Ideas
 - Direct PDF/DOCX resume file upload parser.
