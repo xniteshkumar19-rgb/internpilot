@@ -179,6 +179,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const demoModeToggle = document.getElementById("demo-mode-toggle");
   const demoBadge = document.getElementById("demo-badge");
 
+  const verdictBanner = document.getElementById("verdict-banner");
+  const verdictBadge = document.getElementById("verdict-badge");
+  const verdictSentence = document.getElementById("verdict-sentence");
+  const annotatedCard = document.getElementById("annotated-posting-card");
+  const annotatedBody = document.getElementById("annotated-posting-body");
+  const annotatedCountBadge = document.getElementById("annotated-count-badge");
+
   let testPostingsData = [];
   let demoCacheData = null;
   let sampleResumeRaw = null;
@@ -257,6 +264,130 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/'/g, "&#039;");
   }
 
+  // Render Dynamic Verdict Sentence at top of review column
+  function renderVerdict(level, score, reasons = []) {
+    if (!verdictBanner || !verdictBadge || !verdictSentence) return;
+
+    verdictBanner.className = "verdict-banner";
+    if (level === "high") {
+      verdictBanner.classList.add("verdict-danger");
+      verdictBadge.className = "badge badge-danger";
+      verdictBadge.textContent = "HIGH RISK";
+      const primaryReason = reasons[0];
+      let detail = "asks for a registration or upfront fee";
+      if (primaryReason) {
+        if (primaryReason.evidence) {
+          detail = `asks for "${primaryReason.evidence}"`;
+        } else if (primaryReason.rule) {
+          detail = primaryReason.rule.toLowerCase();
+        }
+      }
+      verdictSentence.textContent = `Don't apply yet: this posting ${detail}.`;
+    } else if (level === "medium") {
+      verdictBanner.classList.add("verdict-caution");
+      verdictBadge.className = "badge badge-warning";
+      verdictBadge.textContent = "MEDIUM RISK";
+      const primaryReason = reasons[0];
+      let detail = "suspicious indicators";
+      if (primaryReason && primaryReason.rule) {
+        detail = primaryReason.rule.toLowerCase();
+      }
+      verdictSentence.textContent = `Proceed with caution: this posting shows ${detail}.`;
+    } else {
+      verdictBanner.classList.add("verdict-safe");
+      verdictBadge.className = "badge badge-success";
+      verdictBadge.textContent = "LOW RISK";
+      verdictSentence.textContent = "Looking good: no common scam warning signs detected.";
+    }
+    verdictBanner.style.display = "flex";
+  }
+
+  // Render Marked-Up Posting with Sequential Highlighter Ignitions
+  function renderAnnotatedPosting(postingText, reasons = []) {
+    if (!annotatedCard || !annotatedBody) return;
+
+    if (!postingText || !postingText.trim()) {
+      annotatedCard.style.display = "none";
+      return;
+    }
+
+    if (!reasons || reasons.length === 0) {
+      if (annotatedCountBadge) annotatedCountBadge.textContent = "0 flags (Clean)";
+      annotatedBody.textContent = postingText;
+      annotatedCard.style.display = "block";
+      return;
+    }
+
+    if (annotatedCountBadge) {
+      annotatedCountBadge.textContent = `${reasons.length} warning flag${reasons.length === 1 ? "" : "s"}`;
+    }
+
+    // Collect all match ranges
+    const ranges = [];
+    reasons.forEach((r, rIdx) => {
+      if (!r.evidence) return;
+      const ev = r.evidence.trim();
+      if (!ev) return;
+
+      const lowerPost = postingText.toLowerCase();
+      const lowerEv = ev.toLowerCase();
+      let searchStart = 0;
+      while (searchStart < lowerPost.length) {
+        const idx = lowerPost.indexOf(lowerEv, searchStart);
+        if (idx === -1) break;
+        ranges.push({
+          start: idx,
+          end: idx + lowerEv.length,
+          rule: r.rule,
+          points: r.points,
+          evidence: postingText.substring(idx, idx + lowerEv.length),
+          order: rIdx
+        });
+        searchStart = idx + Math.max(lowerEv.length, 1);
+      }
+    });
+
+    // Sort by start position
+    ranges.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+
+    // Merge overlapping ranges
+    const merged = [];
+    for (const range of ranges) {
+      if (merged.length === 0) {
+        merged.push(range);
+      } else {
+        const last = merged[merged.length - 1];
+        if (range.start < last.end) {
+          if (range.end > last.end) {
+            last.end = range.end;
+          }
+        } else {
+          merged.push(range);
+        }
+      }
+    }
+
+    // Build markup safely
+    let html = "";
+    let lastIndex = 0;
+    merged.forEach((m, mIdx) => {
+      if (m.start > lastIndex) {
+        html += escapeHtml(postingText.substring(lastIndex, m.start));
+      }
+      const matchedText = postingText.substring(m.start, m.end);
+      const ruleLabel = `[+${m.points || 0} pts] ${m.rule || "Suspicious pattern"}`;
+      html += `<mark class="evidence-mark" tabindex="0" data-rule="${escapeHtml(ruleLabel)}" style="--step-idx: ${mIdx};">${escapeHtml(matchedText)}</mark>`;
+      lastIndex = m.end;
+    });
+
+    if (lastIndex < postingText.length) {
+      html += escapeHtml(postingText.substring(lastIndex));
+    }
+
+    annotatedBody.innerHTML = html;
+    annotatedCard.style.display = "block";
+  }
+
   // Live log renderer callback
   function addLogEntry(entry) {
     // Remove initial empty state if present
@@ -322,6 +453,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       case "scam-clean":
+        renderVerdict("low", entry.score, []);
+        renderAnnotatedPosting(postingInput.value, []);
         stepDiv.innerHTML = `
           <div class="log-step-header">
             <span class="log-tick" aria-hidden="true">✓</span>
@@ -333,6 +466,8 @@ document.addEventListener("DOMContentLoaded", () => {
         break;
 
       case "scam-warn": {
+        renderVerdict("medium", entry.score, entry.reasons);
+        renderAnnotatedPosting(postingInput.value, entry.reasons);
         const reasonsHtml = entry.reasons.map(r => `
           <li><strong>[+${r.points} pts] ${escapeHtml(r.rule)}</strong> — Evidence found: <em>"${escapeHtml(r.evidence)}"</em></li>
         `).join("");
@@ -353,6 +488,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       case "scam-halt": {
+        renderVerdict("high", entry.score, entry.reasons);
+        renderAnnotatedPosting(postingInput.value, entry.reasons);
         const reasonsHtml = entry.reasons.map(r => `
           <li><strong>[+${r.points} pts] ${escapeHtml(r.rule)}</strong> — Evidence found: <em>"${escapeHtml(r.evidence)}"</em></li>
         `).join("");
@@ -578,8 +715,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const resumeText = resumeInput.value.trim();
     const postingText = postingInput.value.trim();
 
-    // Reset log
+    // Reset log, verdict, and marked-up posting
     liveLog.innerHTML = "";
+    if (verdictBanner) {
+      verdictBanner.style.display = "none";
+      verdictBanner.className = "verdict-banner";
+    }
+    if (annotatedCard) {
+      annotatedCard.style.display = "none";
+    }
+    if (annotatedBody) {
+      annotatedBody.innerHTML = "";
+    }
 
     if (!postingText) {
       addLogEntry({

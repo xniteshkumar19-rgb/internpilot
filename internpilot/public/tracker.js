@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (diffDays < 0) {
       const overdue = Math.abs(diffDays);
       return {
-        text: `${overdue} day${overdue === 1 ? '' : 's'} overdue`,
+        text: `OVERDUE (${overdue} day${overdue === 1 ? '' : 's'} past deadline)`,
         urgency: "overdue",
         days: diffDays
       };
@@ -129,20 +129,68 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 4-Week Mini Bar Chart
     const weekLabels = ["3w ago", "2w ago", "Last week", "This week"];
-    const maxBar = Math.max(...activity.fourWeeksTrend, 3); // minimum scale of 3
+    const maxBar = Math.max(...activity.fourWeeksTrend, 3);
     fourWeeksChart.innerHTML = activity.fourWeeksTrend.map((count, idx) => {
-      const heightPct = Math.max(Math.round((count / maxBar) * 100), 12);
+      const heightPct = Math.max(Math.round((count / maxBar) * 100), 14);
       const isCurrent = idx === 3;
       return `
-        <div class="mini-bar-col">
-          <div class="mini-bar-value">${count}</div>
-          <div class="mini-bar-track">
-            <div class="mini-bar-fill ${isCurrent ? 'current-week' : ''}" style="height: ${heightPct}%;"></div>
-          </div>
-          <div class="mini-bar-label">${weekLabels[idx]}</div>
+        <div class="chart-col">
+          <div class="chart-col-count">${count}</div>
+          <div class="chart-bar-rect ${isCurrent ? 'active-week' : ''}" style="height: ${heightPct}%;"></div>
+          <div class="chart-col-label">${weekLabels[idx]}</div>
         </div>
       `;
     }).join("");
+
+    // Segmented Horizontal Stacked Bar
+    const sentItem = activity.breakdown.find(b => b.id === "sent") || { points: 0, max: 45 };
+    const savedItem = activity.breakdown.find(b => b.id === "saved") || { points: 0, max: 15 };
+    const progItem = activity.breakdown.find(b => b.id === "progress") || { points: 0, max: 20 };
+    const discItem = activity.breakdown.find(b => b.id === "discipline") || { points: 0, max: 20 };
+
+    const barSent = document.getElementById("bar-sent");
+    const barSaved = document.getElementById("bar-saved");
+    const barProgress = document.getElementById("bar-progress");
+    const barDiscipline = document.getElementById("bar-discipline");
+
+    if (barSent) barSent.style.width = `${sentItem.points}%`;
+    if (barSaved) barSaved.style.width = `${savedItem.points}%`;
+    if (barProgress) barProgress.style.width = `${progItem.points}%`;
+    if (barDiscipline) barDiscipline.style.width = `${discItem.points}%`;
+
+    const stackedLegendRow = document.getElementById("stacked-legend-row");
+    if (stackedLegendRow) {
+      stackedLegendRow.innerHTML = `
+        <div class="legend-item">
+          <div class="legend-item-title">
+            <span class="legend-dot" style="background: var(--indigo);"></span>
+            <span>Sent: ${sentItem.points}/${sentItem.max}</span>
+          </div>
+          <span class="legend-item-detail">${escapeHtml(sentItem.detail || '')}</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-item-title">
+            <span class="legend-dot" style="background: #0284C7;"></span>
+            <span>Saved: ${savedItem.points}/${savedItem.max}</span>
+          </div>
+          <span class="legend-item-detail">${escapeHtml(savedItem.detail || '')}</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-item-title">
+            <span class="legend-dot" style="background: var(--safe);"></span>
+            <span>Progress: ${progItem.points}/${progItem.max}</span>
+          </div>
+          <span class="legend-item-detail">${escapeHtml(progItem.detail || '')}</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-item-title">
+            <span class="legend-dot" style="background: #475569;"></span>
+            <span>Discipline: ${discItem.points}/${discItem.max}</span>
+          </div>
+          <span class="legend-item-detail">${escapeHtml(discItem.detail || '')}</span>
+        </div>
+      `;
+    }
 
     // 2. Summary Cards Metrics
     metricTotal.textContent = apps.length;
@@ -160,11 +208,11 @@ document.addEventListener("DOMContentLoaded", () => {
       clearAllBtn.style.display = "none";
       trackerList.innerHTML = `
         <div class="tracker-empty">
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <p style="margin-top: 0.6rem; font-weight: 500;">No applications in your tracker yet.</p>
-          <p class="card-subtitle" style="margin-top: 0.2rem;">Run InternPilot on a job posting to analyze and track it here.</p>
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <p style="margin-top: 0.6rem; font-weight: 600;">No applications yet.</p>
+          <p class="card-subtitle" style="margin-top: 0.2rem;">Go to Review Desk to check your first posting.</p>
           <a href="index.html" class="btn-primary" style="margin-top: 1rem; text-decoration: none; display: inline-flex;">
-            Run InternPilot
+            Go to Review Desk
           </a>
         </div>
       `;
@@ -214,6 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
     titleRow.className = "tracker-item-title-row";
 
     const roleHeading = document.createElement("h3");
+    roleHeading.className = "tracker-role-title";
     roleHeading.textContent = app.role || "Internship Role"; // Safe textContent
     titleRow.appendChild(roleHeading);
 

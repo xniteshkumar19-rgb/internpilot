@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
 
 const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const PORT = 3000;
@@ -14,21 +15,28 @@ async function runBrowserE2E() {
   console.log("===============================================================\n");
 
   // 1. Start Server
-  console.log("1. Starting InternPilot Express server...");
-  const serverProcess = spawn('node', ['server.js'], {
-    cwd: __dirname,
-    stdio: 'pipe'
-  });
-
-  serverProcess.stdout.on('data', () => {});
-
-  await sleep(1500);
+  let serverProcess = null;
+  try {
+    const probe = await fetch(`http://localhost:${PORT}/api/test-postings`);
+    if (probe.ok) {
+      console.log(`1. InternPilot Express server is already running on port ${PORT}...`);
+    }
+  } catch {
+    console.log("1. Starting InternPilot Express server...");
+    serverProcess = spawn('node', ['server.js'], {
+      cwd: __dirname,
+      stdio: 'pipe'
+    });
+    await sleep(1500);
+  }
 
   // 2. Launch Headless Chrome with Remote Debugging
   console.log("2. Launching Chrome (Headless) on port 9222...");
   const chromeProcess = spawn(CHROME_PATH, [
     '--headless=new',
+    '--no-sandbox',
     '--remote-debugging-port=9222',
+    `--user-data-dir=${path.join(os.tmpdir(), 'chrome-e2e-' + Date.now())}`,
     '--disable-gpu',
     '--no-first-run',
     '--no-default-browser-check',
@@ -57,7 +65,7 @@ async function runBrowserE2E() {
   if (!wsUrl) {
     console.error("Could not obtain Chrome WebSocket URL");
     chromeProcess.kill();
-    serverProcess.kill();
+    if (serverProcess) serverProcess.kill();
     process.exit(1);
   }
 
@@ -496,7 +504,7 @@ async function runBrowserE2E() {
   // Cleanup
   ws.close();
   chromeProcess.kill();
-  serverProcess.kill();
+  if (serverProcess) serverProcess.kill();
 
   console.log("\n===============================================================");
   if (allPassed) {

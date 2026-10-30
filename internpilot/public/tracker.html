@@ -32,9 +32,6 @@
 
     <!-- Tracker Actions Bar -->
     <section class="sample-loader-bar">
-      <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
-        Local Browser Storage
-      </div>
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <button id="load-demo-btn" type="button" class="btn-secondary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -47,53 +44,67 @@
       </div>
     </section>
 
-    <!-- Activity Report Section -->
-    <section class="card activity-report-card">
-      <div class="activity-report-header">
+    <!-- 1. Applications Sent (Last 4 Weeks) - Positioned First -->
+    <section class="card four-weeks-chart-card">
+      <div class="chart-header">
         <div>
-          <h2>Activity report</h2>
-          <span class="card-subtitle">Weekly momentum & deadline discipline</span>
+          <h2>Applications sent (last 4 weeks)</h2>
+          <span class="card-subtitle">Your consistency over time</span>
         </div>
-        <button id="weekly-summary-btn" type="button" class="btn-secondary" style="font-size: 0.775rem;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          Weekly summary
-        </button>
+        <div class="trend-headline-row">
+          <span class="trend-title">This week:</span>
+          <span id="sent-this-week-count" class="trend-count">0</span>
+          <span id="sent-trend-indicator" class="trend-pill">→ same as last week</span>
+        </div>
       </div>
+      <div id="four-weeks-chart" class="chart-bars-wrap">
+        <!-- Rendered via tracker.js -->
+      </div>
+    </section>
 
-      <!-- Main Activity Metrics Overview -->
-      <div class="activity-hero-grid">
-        <div class="score-display-block">
-          <div class="score-big-wrap">
-            <span id="activity-score-number" class="score-big">0</span>
-            <span class="score-denom">/100</span>
+    <!-- 2. Activity Report & Segmented Horizontal Stacked Bar -->
+    <section class="card activity-score-card">
+      <div class="activity-score-header">
+        <div>
+          <h2>Activity score</h2>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+            <span id="activity-level-badge" class="badge badge-warning">Getting started</span>
+            <span class="card-subtitle">Weekly momentum & deadline discipline</span>
           </div>
-          <div id="activity-level-badge" class="badge badge-warning" style="margin-top: 0.25rem;">Getting started</div>
-          <p class="score-disclaimer-note">
-            Based only on the data in your tracker. This is a simple estimate, not a measure of your worth.
-          </p>
         </div>
-
-        <div class="activity-trend-block">
-          <div class="trend-headline-row">
-            <span class="trend-title">Sent this week:</span>
-            <span id="sent-this-week-count" class="trend-count">0</span>
-            <span id="sent-trend-indicator" class="trend-pill">→ same as last week</span>
-          </div>
-          <div id="next-action-callout" class="next-action-box">
-            <!-- Dynamic next action sentence -->
-          </div>
-
-          <!-- 4-Week Activity Mini Chart -->
-          <div class="chart-container">
-            <span class="chart-label">Applications sent (last 4 weeks):</span>
-            <div id="four-weeks-chart" class="mini-bar-row">
-              <!-- Rendered via JS -->
-            </div>
-          </div>
+        <div class="score-headline-group">
+          <span id="activity-score-number" class="score-big">0</span>
+          <span class="score-denom">/100</span>
+          <button id="weekly-summary-btn" type="button" class="btn-secondary" style="font-size: 0.775rem; margin-left: 0.75rem;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Weekly summary
+          </button>
         </div>
       </div>
 
-      <!-- AI Weekly Summary Output (Hidden by default, graceful fallback) -->
+      <!-- Segmented Horizontal Stacked Bar -->
+      <div class="stacked-progress-container" aria-label="Activity Score Breakdown Bar">
+        <div id="bar-sent" class="stacked-segment segment-sent" style="width: 0%;" title="Sent"></div>
+        <div id="bar-saved" class="stacked-segment segment-saved" style="width: 0%;" title="Saved"></div>
+        <div id="bar-progress" class="stacked-segment segment-progress" style="width: 0%;" title="Progress"></div>
+        <div id="bar-discipline" class="stacked-segment segment-discipline" style="width: 20%;" title="Discipline"></div>
+      </div>
+
+      <!-- Stacked Legend Row -->
+      <div class="stacked-legend-row" id="stacked-legend-row">
+        <!-- Rendered via tracker.js: [Sent: X/45] | [Saved: X/15] | [Progress: X/20] | [Discipline: X/20] -->
+      </div>
+
+      <!-- Next Action Callout -->
+      <div id="next-action-callout" class="next-action-box">
+        <!-- Dynamic next action sentence -->
+      </div>
+
+      <p class="score-disclaimer-note" style="margin: 0; font-size: 0.75rem; color: var(--ink-muted);">
+        Based only on the data in your tracker. This is a simple momentum estimate, not a measure of your worth.
+      </p>
+
+      <!-- AI Weekly Summary Output (Hidden by default) -->
       <div id="ai-summary-card" class="ai-summary-card" style="display: none;">
         <div class="ai-summary-header">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
@@ -102,11 +113,11 @@
         <p id="ai-summary-text" class="ai-summary-body"></p>
       </div>
 
-      <!-- Score Breakdown Accordion / Rows -->
+      <!-- Detailed Score Breakdown List -->
       <div class="breakdown-wrap">
-        <h3 class="breakdown-title">Score breakdown</h3>
+        <h3 class="breakdown-title" style="font-size: 0.85rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em;">Detailed point rules</h3>
         <div id="activity-breakdown-list" class="breakdown-list">
-          <!-- Rendered via tools.js / tracker.js -->
+          <!-- Rendered via tracker.js -->
         </div>
       </div>
     </section>

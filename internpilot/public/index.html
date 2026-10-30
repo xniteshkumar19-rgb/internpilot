@@ -29,83 +29,113 @@
       </nav>
     </header>
 
-    <!-- Quick Load Sample Controls & Demo Mode Bar -->
-    <section class="sample-loader-bar" aria-label="Sample and Demo Controls">
-      <div class="sample-group">
-        <label for="sample-posting-select">Load sample posting:</label>
-        <select id="sample-posting-select">
-          <option value="">-- Choose a test posting --</option>
-        </select>
-      </div>
-      <button id="load-sample-resume-btn" type="button" class="btn-secondary">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Load Sample 1st-Year Resume
-      </button>
-      <div class="demo-mode-group">
-        <label class="toggle-control" for="demo-mode-toggle">
-          <input type="checkbox" id="demo-mode-toggle">
-          <span>Demo mode (saved AI results)</span>
-        </label>
-        <span id="demo-badge" class="badge badge-demo" style="display: none;">Demo mode: using saved results</span>
-      </div>
-    </section>
+    <!-- Two-Column Review Desk Layout -->
+    <main class="review-desk">
 
-    <!-- Main Input Section -->
-    <main class="inputs-grid">
-      <!-- Resume Card -->
-      <div class="card input-card">
-        <div class="card-header">
-          <h2><label for="resume-input">Your Resume</label></h2>
-          <span class="card-subtitle">Paste your resume text below</span>
-        </div>
-        <textarea 
-          id="resume-input" 
-          placeholder="Paste your plain text resume here (skills, education, projects, contact info)..."
-          rows="10"
-        ></textarea>
-      </div>
+      <!-- Left Column: The Materials -->
+      <section class="desk-materials" aria-label="Application Materials">
 
-      <!-- Job Posting Card -->
-      <div class="card input-card">
-        <div class="card-header">
-          <h2><label for="posting-input">Job Posting</label></h2>
-          <span class="card-subtitle">Paste the internship description below</span>
+        <!-- Quick Load Controls & Demo Mode Bar -->
+        <div class="sample-loader-bar" aria-label="Sample and Demo Controls">
+          <div class="sample-group">
+            <label for="sample-posting-select">Load sample posting:</label>
+            <select id="sample-posting-select">
+              <option value="">-- Choose a test posting --</option>
+            </select>
+          </div>
+          <button id="load-sample-resume-btn" type="button" class="btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Load Sample 1st-Year Resume
+          </button>
+          <div class="demo-mode-group">
+            <label class="toggle-control" for="demo-mode-toggle">
+              <input type="checkbox" id="demo-mode-toggle">
+              <span>Demo mode (saved AI results)</span>
+            </label>
+            <span id="demo-badge" class="badge badge-demo" style="display: none;">Demo mode: using saved results</span>
+          </div>
         </div>
-        <textarea 
-          id="posting-input" 
-          placeholder="Paste the job or internship announcement text here..."
-          rows="10"
-        ></textarea>
-        <p class="field-note">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          Your posting text is sent to Google's Gemini API to extract details.
-        </p>
-      </div>
+
+        <!-- Resume Card -->
+        <div class="card input-card">
+          <div class="card-header">
+            <h2><label for="resume-input">Your Resume</label></h2>
+            <span class="card-subtitle">Paste your resume text below</span>
+          </div>
+          <textarea 
+            id="resume-input" 
+            placeholder="Paste your plain text resume here (skills, education, projects, contact info)..."
+            rows="7"
+          ></textarea>
+        </div>
+
+        <!-- Job Posting Card -->
+        <div class="card input-card">
+          <div class="card-header">
+            <h2><label for="posting-input">Job Posting</label></h2>
+            <span class="card-subtitle">Paste the internship description below</span>
+          </div>
+          <textarea 
+            id="posting-input" 
+            placeholder="Paste the job or internship announcement text here..."
+            rows="8"
+          ></textarea>
+          <p class="field-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Your posting text is sent to Google's Gemini API to extract details.
+          </p>
+        </div>
+
+        <!-- Run InternPilot Button -->
+        <div class="action-section">
+          <button id="run-btn" type="button" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Run InternPilot
+          </button>
+        </div>
+
+        <!-- The Memorable Element: Annotated Posting View with Sequential Evidence Highlights -->
+        <div id="annotated-posting-card" class="annotated-posting-card" aria-label="Marked-Up Job Posting Evidence">
+          <div class="annotated-posting-header">
+            <span class="annotated-posting-title">Marked-Up Posting (Evidence Review)</span>
+            <span class="card-subtitle" id="annotated-count-badge">0 flags</span>
+          </div>
+          <div id="annotated-posting-body" class="annotated-posting-body"></div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: The Review -->
+      <section class="desk-review" aria-label="Review and Results">
+
+        <!-- Verdict Banner (Plain sentence at top of review desk) -->
+        <div id="verdict-banner" class="verdict-banner" style="display: none;">
+          <div class="verdict-header-row">
+            <span class="verdict-title">Verdict</span>
+            <span id="verdict-badge" class="badge"></span>
+          </div>
+          <div id="verdict-sentence" class="verdict-sentence"></div>
+        </div>
+
+        <!-- Live Log Panel (Vertical Timeline) -->
+        <div class="card live-log-card" aria-label="Agent Execution Live Log">
+          <div class="card-header log-header">
+            <div class="log-title-wrap">
+              <span class="live-dot" aria-hidden="true"></span>
+              <h2>Live Log</h2>
+            </div>
+            <span class="card-subtitle" id="log-status-text">Ready to analyze</span>
+          </div>
+          <div id="live-log" class="live-log-container" aria-live="polite">
+            <div class="log-empty-state">
+              Click <strong>"Run InternPilot"</strong> to inspect the posting for risks, calculate skill alignment, and generate a draft.
+            </div>
+          </div>
+        </div>
+
+      </section>
+
     </main>
-
-    <!-- Action Section -->
-    <section class="action-section">
-      <button id="run-btn" type="button" class="btn-primary">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Run InternPilot
-      </button>
-    </section>
-
-    <!-- Live Log Panel -->
-    <section class="card live-log-card" aria-label="Agent Execution Live Log">
-      <div class="card-header log-header">
-        <div class="log-title-wrap">
-          <span class="live-dot" aria-hidden="true"></span>
-          <h2>Live Log</h2>
-        </div>
-        <span class="card-subtitle" id="log-status-text">Ready to analyze</span>
-      </div>
-      <div id="live-log" class="live-log-container" aria-live="polite">
-        <div class="log-empty-state">
-          Click <strong>"Run InternPilot"</strong> to inspect the posting for risks, calculate skill alignment, and generate a draft.
-        </div>
-      </div>
-    </section>
 
     <!-- Required Disclaimer Footer -->
     <footer class="app-footer">
