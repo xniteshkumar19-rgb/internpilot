@@ -10,6 +10,7 @@
     "test:reader": "node test-reader.js",
     "test:email": "node test-email.js",
     "test:paths": "node test-agent-paths.js",
+    "test:score": "node test-score.js",
     "test:browser": "node test-browser-e2e.js"
   },
   "dependencies": {

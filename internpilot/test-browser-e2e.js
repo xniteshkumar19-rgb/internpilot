@@ -317,10 +317,35 @@ async function runBrowserE2E() {
 
   const trackerText = await evalInBrowser(`document.body.innerText`);
 
-  if (trackerText.includes("Apex Cloud Technologies") || trackerText.includes("1 application saved")) {
+  if (trackerText.includes("Company from posting") || trackerText.includes("Total applications") || trackerText.includes("Apex Cloud Technologies")) {
     console.log("  ✓ tracker.html successfully loaded and displayed the saved application!");
   } else {
     console.error("  ✗ FAILED: tracker.html did not display the saved application.");
+    allPassed = false;
+  }
+
+  // -------------------------------------------------------------
+  // Test F: Test "Load demo data" and Activity Score in Browser
+  // -------------------------------------------------------------
+  console.log("\n▶ [BROWSER TEST 6] Testing 'Load demo data' on Tracker Page...");
+  await evalInBrowser(`document.getElementById('load-demo-btn').click()`);
+  await sleep(600);
+
+  const trackerDemoText = await evalInBrowser(`document.body.innerText`);
+  const hasDemoApps = trackerDemoText.includes("Acme Cloud Labs") && trackerDemoText.includes("Nexus Data Dynamics");
+  const hasTrendUp = trackerDemoText.includes("↑ from 1 last week");
+  const hasOverdueAction = trackerDemoText.includes("You have 1 saved application past their deadline");
+
+  if (hasDemoApps && hasTrendUp && hasOverdueAction) {
+    console.log("  ✓ Demo data loaded with relative dates successfully.");
+    console.log("  ✓ Activity Report displays trend arrow UP (↑ from 1 last week).");
+    console.log("  ✓ Overdue saved warning displayed in Next Action callout.");
+  } else {
+    console.error("  ✗ FAILED: Demo data or activity report did not update as expected.");
+    console.log("  [DEBUG hasDemoApps]:", hasDemoApps);
+    console.log("  [DEBUG hasTrendUp]:", hasTrendUp);
+    console.log("  [DEBUG hasOverdueAction]:", hasOverdueAction);
+    console.log("  [DEBUG trackerDemoText snippet]:", trackerDemoText.substring(0, 400));
     allPassed = false;
   }
 

@@ -10,18 +10,22 @@
 internpilot/
 ├── public/
 │   ├── index.html         # Main UI with resume & posting inputs, live log, disclaimer
-│   ├── tracker.html       # Saved application tracker (localStorage)
+│   ├── tracker.html       # Application tracker & weekly activity report
+│   ├── tracker.js         # Tracker UI controller & activity score visualizer
 │   ├── style.css          # Modern light theme, single accent color, mobile-responsive
 │   ├── app.js             # UI controller, AI posting reader & email writer
 │   ├── agent.js           # Autonomous agent decision loop & interactive state machine
-│   └── tools.js           # Rule-based scam check, skill matcher, and local storage tools
+│   └── tools.js           # Scam check, skill matcher, computeActivity, and local storage tools
 ├── server.js              # Express server & secure POST /api/gemini proxy
 ├── sample-resume.txt      # Fictional 1st-year student resume (Rohan Sharma)
 ├── test-postings.json     # 7 fictional postings (genuine, scam, tricky, lowmatch)
 ├── test-scam.js           # CLI test runner for scam checker
 ├── test-match.js          # CLI test runner for skill matcher
+├── test-score.js          # CLI test runner for weekly activity score
 ├── test-reader.js         # CLI test runner for AI posting reader
 ├── test-email.js          # CLI test runner for AI email drafter
+├── test-agent-paths.js    # Integration test for agent decision paths
+├── test-browser-e2e.js    # End-to-end browser tests in Chrome via CDP
 ├── package.json           # Dependencies and test scripts
 ├── .gitignore             # Excludes node_modules and .env
 └── README.md              # Project documentation
@@ -64,6 +68,18 @@ You can run each component's test suite independently via npm:
 - **Skill Matcher Test**: Matches `sample-resume.txt` against all 7 postings:
   ```bash
   npm run test:match
+  ```
+- **Weekly Activity Score Test**: Evaluates `computeActivity` on fixed cases with fixed dates and breakdowns:
+  ```bash
+  npm run test:score
+  ```
+- **Decision Paths Integration Test**: Tests all 3 agent branches and user overrides:
+  ```bash
+  npm run test:paths
+  ```
+- **Real Chrome Browser E2E Test**: Drives live browser clicks and verifies all UI views:
+  ```bash
+  npm run test:browser
   ```
 
 ### AI-Powered Tests (Requires server running & `GEMINI_API_KEY` set)

@@ -94,6 +94,38 @@ const SCAM_RULES = [
 ];
 
 // ==========================================
+// WEEKLY ACTIVITY SCORING RULES
+// (Editable rules array at the top of the file)
+// ==========================================
+const ACTIVITY_RULES = [
+  {
+    id: "sent",
+    label: "Applications sent this week",
+    pointsPerItem: 15,
+    maxPoints: 45
+  },
+  {
+    id: "saved",
+    label: "Applications saved this week",
+    pointsPerItem: 5,
+    maxPoints: 15
+  },
+  {
+    id: "progress",
+    label: "Progress this week",
+    pointsPerItem: 10,
+    maxPoints: 20
+  },
+  {
+    id: "discipline",
+    label: "Deadline discipline",
+    startingPoints: 20,
+    deductionPerItem: 10,
+    minPoints: 0
+  }
+];
+
+// ==========================================
 // SKILLS & ALIASES LIST
 // (~60 common internship skills)
 // ==========================================
@@ -192,7 +224,6 @@ function extractSkills(text) {
   const foundSkills = new Set();
   const lowerText = text.toLowerCase();
 
-  // Helper to test if a skill/alias exists with safe boundaries
   function hasToken(token) {
     if (token === "c++") {
       const re = /(?<![\w#+])c\+\+(?![\w#+])/i;
@@ -215,13 +246,11 @@ function extractSkills(text) {
       return re.test(lowerText);
     }
 
-    // Escape regex special chars if any
     const escaped = token.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
     const re = new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, "i");
     return re.test(lowerText);
   }
 
-  // 1. Check multi-word skills first
   const multiWordSkills = SKILLS.filter(s => s.includes(" ") || s.includes("/") || s.includes("."));
   for (const skill of multiWordSkills) {
     if (hasToken(skill)) {
@@ -229,17 +258,15 @@ function extractSkills(text) {
     }
   }
 
-  // 2. Check aliases
   for (const [alias, canonical] of Object.entries(ALIASES)) {
     if (hasToken(alias)) {
       foundSkills.add(canonical);
     }
   }
 
-  // 3. Check single-word skills (excluding single letter skills)
   const singleWordSkills = SKILLS.filter(s => !multiWordSkills.includes(s));
   for (const skill of singleWordSkills) {
-    if (skill.length <= 1) continue; // Ensure no 1-letter skills
+    if (skill.length <= 1) continue;
     if (hasToken(skill)) {
       foundSkills.add(skill);
     }
@@ -254,7 +281,6 @@ function extractSkills(text) {
 function matchSkills(resumeText, postingText, postingSkills = null) {
   const resumeSkills = extractSkills(resumeText);
 
-  // Combine posting skills from reader (if provided) and extracted skills
   let requiredSkills = [];
   if (Array.isArray(postingSkills) && postingSkills.length > 0) {
     const normalizedAI = [];
@@ -304,7 +330,154 @@ function matchSkills(resumeText, postingText, postingSkills = null) {
 }
 
 // ==========================================
-// 4. STORAGE HELPERS (localStorage)
+// 4. WEEKLY ACTIVITY SCORE CALCULATOR
+// ==========================================
+function computeActivity(applications, now = new Date()) {
+  const appList = Array.isArray(applications) ? applications : [];
+  const nowTime = now instanceof Date ? now.getTime() : new Date(now).getTime();
+  const MS_PER_DAY = 86400000;
+
+  // Start-inclusive, end-exclusive time windows: [start, end)
+  const thisWeekStart = nowTime - 7 * MS_PER_DAY;
+  const lastWeekStart = nowTime - 14 * MS_PER_DAY;
+
+  function parseTime(val) {
+    if (!val) return null;
+    const t = new Date(val).getTime();
+    return isNaN(t) ? null : t;
+  }
+
+  let sentThisWeek = 0;
+  let savedThisWeek = 0;
+  let progressThisWeek = 0;
+  let sentLastWeek = 0;
+  let overdueSaved = 0;
+
+  // 4-week counts for visual trend bar chart
+  // Week 3 (3w ago), Week 2 (2w ago), Week 1 (last week), Week 0 (this week)
+  const fourWeeks = [0, 0, 0, 0];
+
+  for (const app of appList) {
+    // 1. Sent count (based on appliedAt)
+    const appliedTime = parseTime(app.appliedAt);
+    if (appliedTime !== null) {
+      if (appliedTime >= thisWeekStart && appliedTime < nowTime) {
+        sentThisWeek++;
+        fourWeeks[3]++;
+      } else if (appliedTime >= lastWeekStart && appliedTime < thisWeekStart) {
+        sentLastWeek++;
+        fourWeeks[2]++;
+      } else if (appliedTime >= nowTime - 21 * MS_PER_DAY && appliedTime < lastWeekStart) {
+        fourWeeks[1]++;
+      } else if (appliedTime >= nowTime - 28 * MS_PER_DAY && appliedTime < nowTime - 21 * MS_PER_DAY) {
+        fourWeeks[0]++;
+      }
+    }
+
+    // 2. Saved count (based on createdAt)
+    const createdTime = parseTime(app.createdAt);
+    if (createdTime !== null && createdTime >= thisWeekStart && createdTime < nowTime) {
+      savedThisWeek++;
+    }
+
+    // 3. Progress this week (Interview or Offer updated this week)
+    const updatedTime = parseTime(app.updatedAt);
+    if ((app.status === "Interview" || app.status === "Offer") && updatedTime !== null) {
+      if (updatedTime >= thisWeekStart && updatedTime < nowTime) {
+        progressThisWeek++;
+      }
+    }
+
+    // 4. Overdue saved applications
+    const deadlineTime = parseTime(app.deadline);
+    if (app.status === "Saved" && deadlineTime !== null && deadlineTime < nowTime) {
+      overdueSaved++;
+    }
+  }
+
+  // Scoring with caps based on ACTIVITY_RULES
+  const sentRule = ACTIVITY_RULES.find(r => r.id === "sent") || { pointsPerItem: 15, maxPoints: 45 };
+  const savedRule = ACTIVITY_RULES.find(r => r.id === "saved") || { pointsPerItem: 5, maxPoints: 15 };
+  const progressRule = ACTIVITY_RULES.find(r => r.id === "progress") || { pointsPerItem: 10, maxPoints: 20 };
+  const disciplineRule = ACTIVITY_RULES.find(r => r.id === "discipline") || { startingPoints: 20, deductionPerItem: 10, minPoints: 0 };
+
+  const sentPoints = Math.min(sentThisWeek * sentRule.pointsPerItem, sentRule.maxPoints);
+  const savedPoints = Math.min(savedThisWeek * savedRule.pointsPerItem, savedRule.maxPoints);
+  const progressPoints = Math.min(progressThisWeek * progressRule.pointsPerItem, progressRule.maxPoints);
+  const disciplinePoints = Math.max(disciplineRule.startingPoints - (overdueSaved * disciplineRule.deductionPerItem), disciplineRule.minPoints);
+
+  const rawScore = sentPoints + savedPoints + progressPoints + disciplinePoints;
+  const score = Math.max(0, Math.min(rawScore, 100));
+
+  let level = "Getting started";
+  if (score >= 80) {
+    level = "Very active";
+  } else if (score >= 60) {
+    level = "Active";
+  } else if (score >= 30) {
+    level = "Building momentum";
+  }
+
+  // Prioritized Next Action Sentence
+  let nextAction = "";
+  if (overdueSaved > 0) {
+    nextAction = `You have ${overdueSaved} saved application${overdueSaved > 1 ? "s" : ""} past their deadline. Apply or remove them.`;
+  } else if (sentThisWeek < 3) {
+    const remaining = 3 - sentThisWeek;
+    nextAction = `Send ${remaining} more application${remaining > 1 ? "s" : ""} this week to reach full points.`;
+  } else {
+    nextAction = "Great week. Keep your tracker updated.";
+  }
+
+  const breakdown = [
+    {
+      label: sentRule.label,
+      points: sentPoints,
+      max: sentRule.maxPoints,
+      detail: `${sentThisWeek} sent (${sentThisWeek} × ${sentRule.pointsPerItem} pts, max ${sentRule.maxPoints})`
+    },
+    {
+      label: savedRule.label,
+      points: savedPoints,
+      max: savedRule.maxPoints,
+      detail: `${savedThisWeek} saved (${savedThisWeek} × ${savedRule.pointsPerItem} pts, max ${savedRule.maxPoints})`
+    },
+    {
+      label: progressRule.label,
+      points: progressPoints,
+      max: progressRule.maxPoints,
+      detail: `${progressThisWeek} progressed (${progressThisWeek} × ${progressRule.pointsPerItem} pts, max ${progressRule.maxPoints})`
+    },
+    {
+      label: disciplineRule.label,
+      points: disciplinePoints,
+      max: disciplineRule.startingPoints,
+      detail: overdueSaved > 0 
+        ? `${disciplineRule.startingPoints} - ${overdueSaved * disciplineRule.deductionPerItem} pts (${overdueSaved} overdue saved)`
+        : "Full points (0 overdue saved)"
+    }
+  ];
+
+  return {
+    score,
+    level,
+    breakdown,
+    thisWeek: {
+      sent: sentThisWeek,
+      saved: savedThisWeek,
+      progressed: progressThisWeek
+    },
+    lastWeek: {
+      sent: sentLastWeek
+    },
+    overdueSaved,
+    fourWeeksTrend: fourWeeks, // [3w ago, 2w ago, last week, this week]
+    nextAction
+  };
+}
+
+// ==========================================
+// 5. STORAGE HELPERS (localStorage)
 // ==========================================
 function loadApplications() {
   try {
@@ -326,10 +499,13 @@ function saveApplication(app) {
       company: app.company || "Unknown Company",
       role: app.role || "Internship Role",
       deadline: app.deadline || "Not specified",
-      status: "Saved",
+      status: app.status || "Saved",
       riskLevel: app.riskLevel || "unknown",
       matchPercent: app.matchPercent !== undefined && app.matchPercent !== null ? app.matchPercent : null,
-      createdAt: new Date().toISOString()
+      createdAt: app.createdAt || new Date().toISOString(),
+      appliedAt: app.appliedAt || (app.status === "Applied" ? new Date().toISOString() : null),
+      updatedAt: new Date().toISOString(),
+      demo: !!app.demo
     };
     current.unshift(newApp);
     localStorage.setItem("internpilot_apps", JSON.stringify(current));
@@ -340,18 +516,51 @@ function saveApplication(app) {
   }
 }
 
+function updateApplication(id, updates) {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const current = loadApplications();
+    const index = current.findIndex(a => a.id === id);
+    if (index === -1) return null;
+
+    const existing = current[index];
+    const nowIso = new Date().toISOString();
+
+    let appliedAt = existing.appliedAt;
+    if (updates.status === "Applied" && !appliedAt) {
+      appliedAt = nowIso;
+    }
+
+    current[index] = {
+      ...existing,
+      ...updates,
+      appliedAt,
+      updatedAt: nowIso
+    };
+
+    localStorage.setItem("internpilot_apps", JSON.stringify(current));
+    return current[index];
+  } catch (err) {
+    console.error("Error updating application in localStorage:", err);
+    return null;
+  }
+}
+
 // ==========================================
 // UNIVERSAL MODULE EXPORT GUARD
 // ==========================================
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     SCAM_RULES,
+    ACTIVITY_RULES,
     SKILLS,
     ALIASES,
     scamCheck,
     extractSkills,
     matchSkills,
+    computeActivity,
     saveApplication,
+    updateApplication,
     loadApplications
   };
 }
