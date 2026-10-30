@@ -79,8 +79,9 @@ npm start
 ```
 Open [http://localhost:3000](http://localhost:3000) in your web browser.
 
-## Running Tests
+## Running Tests & Offline Demo Cache
 Run automated test suites from the `internpilot` directory:
+- `npm run build:demo-cache`: Generates `public/demo-cache.json` for offline Demo Mode using sample postings.
 - `npm run test:scam`: Tests rule-based scam check across 7 test postings.
 - `npm run test:match`: Tests skill matcher against `sample-resume.txt`.
 - `npm run test:score`: Tests weekly activity scoring across 4 edge cases.
