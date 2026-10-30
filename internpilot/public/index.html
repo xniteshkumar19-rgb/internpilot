@@ -5,17 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>InternPilot - Smart AI Internship Assistant & Scam Checker</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Sora:wght@400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Top Scroll Progress Indicator -->
+  <div id="progress"></div>
+
+  <!-- Ambient Animated Background Overlay -->
+  <div class="bg-ambient" aria-hidden="true"></div>
+
   <div class="app-container">
+    <!-- Sticky Blurred Navigation -->
     <header class="app-header">
       <div class="header-content">
         <div class="brand">
           <div class="brand-badge">Pilot AI</div>
-          <h1>InternPilot</h1>
+          <span class="brand-name">InternPilot</span>
         </div>
-        <p class="tagline">Smart rule-based verification, skill alignment, and tailored outreach for student internships.</p>
       </div>
       <nav class="header-nav" aria-label="Main Navigation">
         <a href="index.html" class="nav-link-btn active">
@@ -29,8 +38,18 @@
       </nav>
     </header>
 
+    <!-- Striking Hero Section -->
+    <section class="hero reveal" aria-label="Hero Overview">
+      <div class="hero-badge">
+        <span class="hero-badge-dot"></span>
+        <span>Student Internship Copilot</span>
+      </div>
+      <h1 class="hero-heading">Verify Internships. <br><span class="accent-text">Detect Scams.</span> Draft Outreach.</h1>
+      <p class="hero-subheading">A dedicated review desk for students: instant rule-based scam detection, automated skill alignment with your resume, and tailored email outreach in seconds.</p>
+    </section>
+
     <!-- Top Dashboard Analytics Overview -->
-    <section class="dashboard-overview-banner" aria-label="Application Metrics Overview">
+    <section class="dashboard-overview-banner reveal" aria-label="Application Metrics Overview">
       <div class="overview-stat-card">
         <span class="overview-stat-label">Total Applications</span>
         <span class="overview-stat-val" id="dash-total-apps">0</span>
@@ -59,10 +78,10 @@
     </section>
 
     <!-- Two-Column Review Desk Layout -->
-    <main class="review-desk">
+    <main class="review-desk reveal">
 
       <!-- Left Column: The Materials -->
-      <section class="desk-materials" aria-label="Application Materials">
+      <section class="desk-materials" id="materials" aria-label="Application Materials">
 
         <!-- Quick Load Controls & Demo Mode Bar -->
         <div class="sample-loader-bar" aria-label="Sample and Demo Controls">
@@ -86,7 +105,7 @@
         </div>
 
         <!-- Resume Card with Drag-and-Drop & File Parsing -->
-        <div class="card input-card">
+        <div class="card input-card" id="resume">
           <div class="card-header">
             <h2><label for="resume-input">Your Resume</label></h2>
             <span class="card-subtitle" id="resume-count-hint">Paste text or drop a file (PDF, DOCX, TXT)</span>
@@ -129,7 +148,7 @@
         </div>
 
         <!-- Job Posting Card -->
-        <div class="card input-card">
+        <div class="card input-card" id="posting">
           <div class="card-header">
             <h2><label for="posting-input">Job Posting Description</label></h2>
             <span class="card-subtitle">Paste any internship or job announcement</span>
@@ -159,7 +178,7 @@
         </div>
 
         <!-- Run InternPilot Button -->
-        <div class="action-section">
+        <div class="action-section" id="run">
           <button id="run-btn" type="button" class="btn-primary">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Run InternPilot
@@ -178,7 +197,7 @@
       </section>
 
       <!-- Right Column: The Review -->
-      <section class="desk-review" aria-label="Review and Results">
+      <section class="desk-review" id="results" aria-label="Review and Results">
 
         <!-- Verdict Banner (Plain sentence at top of review desk) -->
         <div id="verdict-banner" class="verdict-banner" style="display: none;">
@@ -190,7 +209,7 @@
         </div>
 
         <!-- Live Log Panel (Vertical Timeline) -->
-        <div class="card live-log-card" aria-label="Agent Execution Live Log">
+        <div class="card live-log-card" id="log" aria-label="Agent Execution Live Log">
           <div class="card-header log-header">
             <div class="log-title-wrap">
               <span class="live-dot" aria-hidden="true"></span>
@@ -220,5 +239,28 @@
   <script src="tools.js"></script>
   <script src="agent.js"></script>
   <script src="app.js"></script>
+  <script>
+    // Scroll progress bar
+    window.addEventListener('scroll', () => {
+      const p = document.getElementById('progress');
+      if (!p) return;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      p.style.width = total > 0 ? ((window.scrollY / total) * 100) + '%' : '0%';
+    }, { passive: true });
+
+    // Scroll reveal observer
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.08 });
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    } else {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    }
+  </script>
 </body>
 </html>

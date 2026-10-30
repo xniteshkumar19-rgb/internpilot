@@ -5,9 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>InternPilot - Application Tracker & Activity Score</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&family=Sora:wght@400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Top Scroll Progress Indicator -->
+  <div id="progress"></div>
+
+  <!-- Ambient Animated Background Overlay -->
+  <div class="bg-ambient" aria-hidden="true"></div>
+
   <div class="app-container">
     <!-- Header with Unified Navigation -->
     <header class="app-header">
@@ -167,7 +176,7 @@
         </div>
       </div>
 
-      <div id="tracker-list" class="tracker-list">
+      <div id="tracker-list" class="tracker-list tracker-body">
         <!-- Rendered safely via tracker.js -->
       </div>
     </main>
@@ -182,5 +191,14 @@
 
   <script src="tools.js"></script>
   <script src="tracker.js"></script>
+  <script>
+    // Scroll progress bar
+    window.addEventListener('scroll', () => {
+      const p = document.getElementById('progress');
+      if (!p) return;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      p.style.width = total > 0 ? ((window.scrollY / total) * 100) + '%' : '0%';
+    }, { passive: true });
+  </script>
 </body>
 </html>
