@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InternPilot - Smart Internship Assistant & Scam Checker</title>
+  <title>InternPilot - Smart AI Internship Assistant & Scam Checker</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -12,7 +12,7 @@
     <header class="app-header">
       <div class="header-content">
         <div class="brand">
-          <div class="brand-badge">Pilot</div>
+          <div class="brand-badge">Pilot AI</div>
           <h1>InternPilot</h1>
         </div>
         <p class="tagline">Smart rule-based verification, skill alignment, and tailored outreach for student internships.</p>
@@ -28,6 +28,35 @@
         </a>
       </nav>
     </header>
+
+    <!-- Top Dashboard Analytics Overview -->
+    <section class="dashboard-overview-banner" aria-label="Application Metrics Overview">
+      <div class="overview-stat-card">
+        <span class="overview-stat-label">Total Applications</span>
+        <span class="overview-stat-val" id="dash-total-apps">0</span>
+        <span class="overview-stat-sub">Tracked in local storage</span>
+      </div>
+      <div class="overview-stat-card">
+        <span class="overview-stat-label">Applications Sent</span>
+        <span class="overview-stat-val" id="dash-applied-apps">0</span>
+        <span class="overview-stat-sub">Outreach completed</span>
+      </div>
+      <div class="overview-stat-card">
+        <span class="overview-stat-label">Interviews / Offers</span>
+        <span class="overview-stat-val" id="dash-progress-apps">0</span>
+        <span class="overview-stat-sub">Active discussions</span>
+      </div>
+      <div class="overview-stat-card">
+        <span class="overview-stat-label">Activity Momentum</span>
+        <span class="overview-stat-val" id="dash-activity-score">0<small style="font-size: 0.95rem; font-weight: normal; color: var(--text-faint);">/100</small></span>
+        <span class="overview-stat-sub" id="dash-activity-level">Getting started</span>
+      </div>
+      <div class="overview-stat-card">
+        <span class="overview-stat-label">Deadlines Due Soon</span>
+        <span class="overview-stat-val" id="dash-due-soon">0</span>
+        <span class="overview-stat-sub">Next 7 calendar days</span>
+      </div>
+    </section>
 
     <!-- Two-Column Review Desk Layout -->
     <main class="review-desk">
@@ -56,33 +85,76 @@
           </div>
         </div>
 
-        <!-- Resume Card -->
+        <!-- Resume Card with Drag-and-Drop & File Parsing -->
         <div class="card input-card">
           <div class="card-header">
             <h2><label for="resume-input">Your Resume</label></h2>
-            <span class="card-subtitle">Paste your resume text below</span>
+            <span class="card-subtitle" id="resume-count-hint">Paste text or drop a file (PDF, DOCX, TXT)</span>
           </div>
-          <textarea 
-            id="resume-input" 
-            placeholder="Paste your plain text resume here (skills, education, projects, contact info)..."
-            rows="7"
-          ></textarea>
+
+          <!-- Dual Tab Input Selector -->
+          <div class="input-tabs-bar">
+            <button type="button" class="tab-btn active" id="tab-upload-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload Document (PDF / DOCX / TXT)
+            </button>
+            <button type="button" class="tab-btn" id="tab-paste-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              View & Edit Text
+            </button>
+          </div>
+
+          <!-- Drag and Drop Box -->
+          <div id="resume-drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Drop your resume file here or click to browse">
+            <input type="file" id="resume-file-input" accept=".pdf,.docx,.txt" style="display: none;">
+            <div class="drop-zone-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            </div>
+            <div class="drop-zone-title">Click to upload or drag & drop resume</div>
+            <div class="drop-zone-subtitle">Supported formats: PDF, DOCX, TXT (Processed securely on local server)</div>
+            <div id="resume-file-badge" class="file-status-badge" style="display: none;">
+              <span id="resume-filename-text">resume.pdf</span>
+              <span id="clear-resume-file-btn" role="button" tabindex="0" style="color: inherit; cursor: pointer; font-size: 0.9rem; padding: 0 0.35rem;" title="Clear file">✕</span>
+            </div>
+          </div>
+
+          <!-- Text Area for Resume -->
+          <div id="resume-textarea-wrap" style="display: none; margin-top: 0.75rem;">
+            <textarea 
+              id="resume-input" 
+              placeholder="Paste your plain text resume here (skills, education, projects, contact info)..."
+              rows="7"
+            ></textarea>
+          </div>
         </div>
 
         <!-- Job Posting Card -->
         <div class="card input-card">
           <div class="card-header">
-            <h2><label for="posting-input">Job Posting</label></h2>
-            <span class="card-subtitle">Paste the internship description below</span>
+            <h2><label for="posting-input">Job Posting Description</label></h2>
+            <span class="card-subtitle">Paste any internship or job announcement</span>
           </div>
           <textarea 
             id="posting-input" 
-            placeholder="Paste the job or internship announcement text here..."
+            placeholder="Paste the job or internship announcement text here (any format, company, or platform)..."
             rows="8"
           ></textarea>
+
+          <!-- Optional manual override fields for custom entries -->
+          <div class="metadata-inputs-row">
+            <div>
+              <label for="custom-company-input" style="font-size: 0.75rem; color: var(--text-faint); font-weight: 700; text-transform: uppercase;">Company (Optional override)</label>
+              <input type="text" id="custom-company-input" placeholder="e.g. Acme Labs (Auto-detected if empty)">
+            </div>
+            <div>
+              <label for="custom-role-input" style="font-size: 0.75rem; color: var(--text-faint); font-weight: 700; text-transform: uppercase;">Job Role (Optional override)</label>
+              <input type="text" id="custom-role-input" placeholder="e.g. Frontend Intern (Auto-detected if empty)">
+            </div>
+          </div>
+
           <p class="field-note">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            Your posting text is sent to Google's Gemini API to extract details.
+            Your posting text is analyzed locally with deterministic scam checks, and sent to Gemini API for entity extraction.
           </p>
         </div>
 
@@ -94,7 +166,7 @@
           </button>
         </div>
 
-        <!-- The Memorable Element: Annotated Posting View with Sequential Evidence Highlights -->
+        <!-- Marked-Up Posting View with Sequential Evidence Highlights -->
         <div id="annotated-posting-card" class="annotated-posting-card" aria-label="Marked-Up Job Posting Evidence">
           <div class="annotated-posting-header">
             <span class="annotated-posting-title">Marked-Up Posting (Evidence Review)</span>
@@ -128,7 +200,7 @@
           </div>
           <div id="live-log" class="live-log-container" aria-live="polite">
             <div class="log-empty-state">
-              Click <strong>"Run InternPilot"</strong> to inspect the posting for risks, calculate skill alignment, and generate a draft.
+              Upload your resume and click <strong>"Run InternPilot"</strong> to inspect any internship posting for risks, calculate skill alignment, and generate a tailored draft.
             </div>
           </div>
         </div>

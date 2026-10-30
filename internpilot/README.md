@@ -83,15 +83,18 @@ Open [http://localhost:3000](http://localhost:3000) in your web browser.
 Run automated test suites from the `internpilot` directory:
 - `npm run build:demo-cache`: Generates `public/demo-cache.json` for offline Demo Mode using sample postings.
 - `npm run test:scam`: Tests rule-based scam check across 7 test postings.
+- `npm run test:pay`: Tests contextual payment detection across 16 fee and salary scenarios.
 - `npm run test:match`: Tests skill matcher against `sample-resume.txt`.
 - `npm run test:score`: Tests weekly activity scoring across 4 edge cases.
 - `npm run test:paths`: Tests all 3 agent decision branches and user overrides.
+- `npm run test:dynamic`: Tests dynamic custom resume parsing, custom job descriptions, and metadata overrides.
 - `npm run test:browser`: Runs full end-to-end browser tests in Chrome via CDP.
 - `npm run test:reader`: Tests AI posting extraction *(requires server running)*.
 - `npm run test:email`: Tests AI email drafting *(requires server running)*.
 
 ## Privacy & Responsible Use
 - **Client-Side Privacy:** Your resume text is stored only in browser memory and local storage.
+- **Local Multi-Format Resume Parsing:** PDF, DOCX, and TXT documents are parsed locally on the server without sending files to third-party parsing clouds.
 - **Minimal AI Data Sharing:** Posting and resume text are sent to the Gemini API only when running the agent.
 - **Human in the Loop:** InternPilot never sends emails automatically; users must review, edit, and click send in their own email client.
 - **Advisory Only:** Scam checks identify suspicious patterns, not legal proof. Always independently verify employers.
@@ -108,7 +111,6 @@ Run automated test suites from the `internpilot` directory:
 - `docs/screenshot-tracker.png`: Application tracker, nearest deadline sorting, and weekly activity report.
 
 ## Future Ideas
-- Direct PDF/DOCX resume file upload parser.
 - Company domain reputation checks via WHOIS and public registry lookups.
 - Calendar export integration for approaching internship deadlines.
 

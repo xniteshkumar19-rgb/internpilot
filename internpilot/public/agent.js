@@ -64,7 +64,10 @@ async function runAgent(resumeText, postingText, log, options = {}) {
 
     const normResume = normalizeText(state.resumeText);
     const normSampleResume = normalizeText(sampleResumeText);
-    const resumeMatches = normResume.length > 0 && normSampleResume.length > 0 && normResume === normSampleResume;
+    const resumeMatches = normResume.length > 0 && (
+      normResume === normSampleResume ||
+      (normResume.includes("ROHAN SHARMA") && (normSampleResume.includes("ROHAN SHARMA") || !normSampleResume))
+    );
 
     const normPosting = normalizeText(state.postingText);
 
@@ -136,19 +139,44 @@ async function runAgent(resumeText, postingText, log, options = {}) {
           const details = await readerFn(textForAI);
           state.details = details;
 
+          if (options.customCompany && state.details) {
+            state.details.company = options.customCompany;
+          }
+          if (options.customRole && state.details) {
+            state.details.role = options.customRole;
+          }
+
           if (details) {
             log({
               type: "details-card",
               title: "✓ Reading the posting: Details extracted",
-              data: details
+              data: state.details
             });
           } else {
+            if (options.customCompany || options.customRole) {
+              state.details = {
+                company: options.customCompany || "Company from posting",
+                role: options.customRole || "Internship Role",
+                requiredSkills: [],
+                deadline: "Not specified",
+                contactEmail: null
+              };
+            }
             log({
               type: "decision",
               text: "Decision: AI reader unavailable, continuing with keyword checks only."
             });
           }
         } else {
+          if (options.customCompany || options.customRole) {
+            state.details = {
+              company: options.customCompany || "Company from posting",
+              role: options.customRole || "Internship Role",
+              requiredSkills: [],
+              deadline: "Not specified",
+              contactEmail: null
+            };
+          }
           log({
             type: "decision",
             text: "Decision: Continuing with keyword checks only."
@@ -156,6 +184,15 @@ async function runAgent(resumeText, postingText, log, options = {}) {
         }
       } catch (err) {
         console.error("Step A error:", err);
+        if (options.customCompany || options.customRole) {
+          state.details = {
+            company: options.customCompany || "Company from posting",
+            role: options.customRole || "Internship Role",
+            requiredSkills: [],
+            deadline: "Not specified",
+            contactEmail: null
+          };
+        }
         log({
           type: "decision",
           text: "Decision: AI reader encountered error, continuing with keyword checks only."
@@ -396,8 +433,8 @@ async function runAgent(resumeText, postingText, log, options = {}) {
   // STEP E: TRACKER INTERACTIVE CONFIRMATION
   // ==========================================
   try {
-    const company = state.details?.company || "Company from posting";
-    const role = state.details?.role || "Internship Role";
+    const company = state.details?.company || options.customCompany || "Company from posting";
+    const role = state.details?.role || options.customRole || "Internship Role";
     const deadline = state.details?.deadline || "Not specified";
 
     log({

@@ -179,6 +179,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const demoModeToggle = document.getElementById("demo-mode-toggle");
   const demoBadge = document.getElementById("demo-badge");
 
+  const resumeDropZone = document.getElementById("resume-drop-zone");
+  const resumeFileInput = document.getElementById("resume-file-input");
+  const resumeFileBadge = document.getElementById("resume-file-badge");
+  const resumeFilenameText = document.getElementById("resume-filename-text");
+  const clearResumeFileBtn = document.getElementById("clear-resume-file-btn");
+  const tabUploadBtn = document.getElementById("tab-upload-btn");
+  const tabPasteBtn = document.getElementById("tab-paste-btn");
+  const resumeTextareaWrap = document.getElementById("resume-textarea-wrap");
+  const resumeCountHint = document.getElementById("resume-count-hint");
+  const customCompanyInput = document.getElementById("custom-company-input");
+  const customRoleInput = document.getElementById("custom-role-input");
+
+  const dashTotalApps = document.getElementById("dash-total-apps");
+  const dashAppliedApps = document.getElementById("dash-applied-apps");
+  const dashProgressApps = document.getElementById("dash-progress-apps");
+  const dashActivityScore = document.getElementById("dash-activity-score");
+  const dashActivityLevel = document.getElementById("dash-activity-level");
+  const dashDueSoon = document.getElementById("dash-due-soon");
+
   const verdictBanner = document.getElementById("verdict-banner");
   const verdictBadge = document.getElementById("verdict-badge");
   const verdictSentence = document.getElementById("verdict-sentence");
@@ -189,6 +208,186 @@ document.addEventListener("DOMContentLoaded", () => {
   let testPostingsData = [];
   let demoCacheData = null;
   let sampleResumeRaw = null;
+
+  // Real-time top dashboard banner metrics updater
+  function updateDashboardBanner() {
+    if (typeof loadApplications !== "function") return;
+    const apps = loadApplications();
+    const total = apps.length;
+    const applied = apps.filter(a => a.status === "Applied" || a.status === "Interview" || a.status === "Offer").length;
+    const progress = apps.filter(a => a.status === "Interview" || a.status === "Offer").length;
+
+    const now = new Date();
+    const next7Days = new Date(now.getTime() + 7 * 86400000);
+    let dueSoon = 0;
+    apps.forEach(a => {
+      if (a.status === "Saved" && a.deadline && a.deadline !== "Not specified") {
+        const d = new Date(a.deadline);
+        if (!isNaN(d.getTime()) && d >= now && d <= next7Days) {
+          dueSoon++;
+        }
+      }
+    });
+
+    let activityScore = 0;
+    let activityLevel = "Getting started";
+    if (typeof computeActivity === "function") {
+      const act = computeActivity(apps, now);
+      activityScore = act.score;
+      activityLevel = act.level;
+    }
+
+    if (dashTotalApps) dashTotalApps.textContent = total;
+    if (dashAppliedApps) dashAppliedApps.textContent = applied;
+    if (dashProgressApps) dashProgressApps.textContent = progress;
+    if (dashActivityScore) dashActivityScore.innerHTML = `${activityScore}<small style="font-size: 0.95rem; font-weight: normal; color: var(--text-faint);">/100</small>`;
+    if (dashActivityLevel) dashActivityLevel.textContent = activityLevel;
+    if (dashDueSoon) dashDueSoon.textContent = dueSoon;
+  }
+
+  // Initial dashboard load
+  updateDashboardBanner();
+
+  // Resume File Upload & Parsing logic
+  function setResumeContent(text, filename = "") {
+    if (resumeInput) {
+      resumeInput.value = text;
+    }
+    if (resumeFilenameText) {
+      const chars = text.length;
+      resumeFilenameText.textContent = filename ? `${filename} (${chars} chars)` : `${chars} chars`;
+    }
+    if (resumeFileBadge) {
+      resumeFileBadge.style.display = "inline-flex";
+    }
+    if (resumeCountHint) {
+      resumeCountHint.textContent = `${text.length} characters loaded`;
+    }
+  }
+
+  async function handleResumeFile(file) {
+    if (!file) return;
+    const filename = file.name;
+    const lower = filename.toLowerCase();
+
+    if (resumeFilenameText) resumeFilenameText.textContent = `Parsing ${filename}...`;
+    if (resumeFileBadge) resumeFileBadge.style.display = "inline-flex";
+
+    try {
+      if (lower.endsWith(".txt")) {
+        const text = await file.text();
+        setResumeContent(text, filename);
+      } else if (lower.endsWith(".pdf") || lower.endsWith(".docx")) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const res = await fetch("/api/parse-resume", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                filename,
+                fileData: e.target.result,
+                fileType: file.type
+              })
+            });
+            if (!res.ok) {
+              const errJson = await res.json().catch(() => ({}));
+              throw new Error(errJson.error || "Server parsing failed");
+            }
+            const data = await res.json();
+            setResumeContent(data.text || "", filename);
+          } catch (err) {
+            console.error("File parsing error:", err);
+            alert("Could not parse resume: " + err.message);
+            if (resumeFileBadge) resumeFileBadge.style.display = "none";
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert("Unsupported file format. Please upload a PDF, DOCX, or TXT file.");
+        if (resumeFileBadge) resumeFileBadge.style.display = "none";
+      }
+    } catch (err) {
+      console.error("File read error:", err);
+      alert("Error reading file: " + err.message);
+      if (resumeFileBadge) resumeFileBadge.style.display = "none";
+    }
+  }
+
+  // Resume Drag & Drop events
+  if (resumeDropZone && resumeFileInput) {
+    resumeDropZone.addEventListener("click", () => resumeFileInput.click());
+    resumeDropZone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        resumeFileInput.click();
+      }
+    });
+
+    resumeFileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleResumeFile(e.target.files[0]);
+      }
+    });
+
+    ["dragenter", "dragover"].forEach(evtName => {
+      resumeDropZone.addEventListener(evtName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resumeDropZone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(evtName => {
+      resumeDropZone.addEventListener(evtName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resumeDropZone.classList.remove("dragover");
+      });
+    });
+
+    resumeDropZone.addEventListener("drop", (e) => {
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleResumeFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  if (clearResumeFileBtn) {
+    clearResumeFileBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (resumeInput) resumeInput.value = "";
+      if (resumeFileInput) resumeFileInput.value = "";
+      if (resumeFileBadge) resumeFileBadge.style.display = "none";
+      if (resumeCountHint) resumeCountHint.textContent = "Paste text or drop a file (PDF, DOCX, TXT)";
+    });
+  }
+
+  // Dual Tabs (Upload File vs View & Edit Text)
+  if (tabUploadBtn && tabPasteBtn && resumeDropZone && resumeTextareaWrap) {
+    tabUploadBtn.addEventListener("click", () => {
+      tabUploadBtn.classList.add("active");
+      tabPasteBtn.classList.remove("active");
+      resumeDropZone.style.display = "flex";
+      resumeTextareaWrap.style.display = "none";
+    });
+
+    tabPasteBtn.addEventListener("click", () => {
+      tabPasteBtn.classList.add("active");
+      tabUploadBtn.classList.remove("active");
+      resumeDropZone.style.display = "none";
+      resumeTextareaWrap.style.display = "block";
+      if (resumeInput) resumeInput.focus();
+    });
+  }
+
+  if (resumeInput) {
+    resumeInput.addEventListener("input", () => {
+      if (resumeCountHint) {
+        resumeCountHint.textContent = `${resumeInput.value.length} characters`;
+      }
+    });
+  }
 
   async function ensureDemoDataLoaded() {
     if (!demoCacheData) {
@@ -249,12 +448,28 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Preload sample resume immediately for instant synchronous availability
+  fetch("/api/sample-resume")
+    .then(r => r.text())
+    .then(text => { sampleResumeRaw = text; })
+    .catch(() => {});
+
   // 2. Populate sample resume button from /api/sample-resume
   loadResumeBtn.addEventListener("click", () => {
+    if (sampleResumeRaw) {
+      setResumeContent(sampleResumeRaw, "sample-resume.txt (Rohan Sharma)");
+      return;
+    }
+    if (demoCacheData && demoCacheData.sampleResumeText) {
+      sampleResumeRaw = demoCacheData.sampleResumeText;
+      setResumeContent(sampleResumeRaw, "sample-resume.txt (Rohan Sharma)");
+      return;
+    }
     fetch("/api/sample-resume")
       .then(r => r.text())
       .then(text => {
-        resumeInput.value = text;
+        sampleResumeRaw = text;
+        setResumeContent(text, "sample-resume.txt (Rohan Sharma)");
       })
       .catch(err => console.warn("Could not load sample resume:", err));
   });
@@ -687,6 +902,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (typeof entry.onConfirm === "function") {
             entry.onConfirm();
           }
+          updateDashboardBanner();
         });
 
         noBtn.addEventListener("click", () => {
@@ -751,13 +967,19 @@ document.addEventListener("DOMContentLoaded", () => {
       await ensureDemoDataLoaded();
     }
 
+    const customCompany = customCompanyInput ? customCompanyInput.value.trim() : "";
+    const customRole = customRoleInput ? customRoleInput.value.trim() : "";
+
     try {
       await runAgent(resumeText, postingText, addLogEntry, {
         demoMode: isDemoMode,
         demoCache: demoCacheData,
         sampleResumeText: sampleResumeRaw,
-        samplePostingId: samplePostingSelect.value
+        samplePostingId: samplePostingSelect.value,
+        customCompany,
+        customRole
       });
+      updateDashboardBanner();
     } catch (err) {
       console.error("Agent error:", err);
       addLogEntry({

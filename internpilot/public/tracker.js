@@ -33,6 +33,30 @@ document.addEventListener("DOMContentLoaded", () => {
   const aiSummaryCard = document.getElementById("ai-summary-card");
   const aiSummaryText = document.getElementById("ai-summary-text");
 
+  const trackerSearchInput = document.getElementById("tracker-search-input");
+  const trackerFilterPills = document.getElementById("tracker-filter-pills");
+  let currentSearchQuery = "";
+  let currentStatusFilter = "all";
+
+  if (trackerSearchInput) {
+    trackerSearchInput.addEventListener("input", (e) => {
+      currentSearchQuery = e.target.value.trim().toLowerCase();
+      renderAll();
+    });
+  }
+
+  if (trackerFilterPills) {
+    const pills = trackerFilterPills.querySelectorAll(".filter-pill");
+    pills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        pills.forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        currentStatusFilter = pill.getAttribute("data-filter") || "all";
+        renderAll();
+      });
+    });
+  }
+
   // Helper: compute days difference (deadline - now)
   function getDeadlineInfo(deadlineStr, now = new Date()) {
     if (!deadlineStr || deadlineStr === "Not specified") {
@@ -232,11 +256,34 @@ document.addEventListener("DOMContentLoaded", () => {
       return aInfo.days - bInfo.days;    // lowest days (including negative) first
     });
 
-    trackerList.innerHTML = "";
-    sorted.forEach(app => {
-      const row = createApplicationRow(app, now);
-      trackerList.appendChild(row);
+    const filtered = sorted.filter(app => {
+      if (currentStatusFilter !== "all" && app.status !== currentStatusFilter) {
+        return false;
+      }
+      if (currentSearchQuery) {
+        const comp = (app.company || "").toLowerCase();
+        const role = (app.role || "").toLowerCase();
+        if (!comp.includes(currentSearchQuery) && !role.includes(currentSearchQuery)) {
+          return false;
+        }
+      }
+      return true;
     });
+
+    trackerList.innerHTML = "";
+    if (filtered.length === 0) {
+      trackerList.innerHTML = `
+        <div class="tracker-empty" style="padding: 2.5rem 1rem; text-align: center; color: var(--text-faint);">
+          <p style="font-weight: 600;">No applications match your search filter.</p>
+          <p class="card-subtitle" style="margin-top: 0.25rem;">Try a different keyword or reset status to 'All'.</p>
+        </div>
+      `;
+    } else {
+      filtered.forEach(app => {
+        const row = createApplicationRow(app, now);
+        trackerList.appendChild(row);
+      });
+    }
   }
 
   // Create an application item element with safe DOM text injection

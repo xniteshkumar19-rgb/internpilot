@@ -13,8 +13,83 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+let pdfParse = null;
+try {
+  pdfParse = require('pdf-parse');
+} catch (e) {
+  console.warn('pdf-parse not available:', e.message);
+}
+
+let mammoth = null;
+try {
+  mammoth = require('mammoth');
+} catch (e) {
+  console.warn('mammoth not available:', e.message);
+}
+
+// 0. POST /api/parse-resume
+// Parses PDF, DOCX, or TXT file sent as base64 or raw text locally and securely
+app.post('/api/parse-resume', async (req, res) => {
+  try {
+    const { filename, fileData, fileType } = req.body;
+    if (!fileData) {
+      return res.status(400).json({ error: 'No file data provided' });
+    }
+
+    const name = (filename || '').toLowerCase();
+    const isPdf = name.endsWith('.pdf') || (fileType && fileType.includes('pdf'));
+    const isDocx = name.endsWith('.docx') || (fileType && (fileType.includes('word') || fileType.includes('officedocument')));
+
+    // Handle base64 buffer or plain string
+    let buffer;
+    if (typeof fileData === 'string' && fileData.includes(';base64,')) {
+      const base64Str = fileData.split(';base64,')[1];
+      buffer = Buffer.from(base64Str, 'base64');
+    } else if (typeof fileData === 'string') {
+      buffer = Buffer.from(fileData, 'base64');
+    } else {
+      buffer = Buffer.from(fileData);
+    }
+
+    let extractedText = '';
+
+    if (isPdf) {
+      if (!pdfParse) {
+        return res.status(500).json({ error: 'PDF parser not installed on server' });
+      }
+      const data = await pdfParse(buffer);
+      extractedText = data.text || '';
+    } else if (isDocx) {
+      if (!mammoth) {
+        return res.status(500).json({ error: 'DOCX parser not installed on server' });
+      }
+      const result = await mammoth.extractRawText({ buffer });
+      extractedText = result.value || '';
+    } else {
+      // Treat as plain text
+      extractedText = buffer.toString('utf8');
+    }
+
+    // Clean up excessive whitespace while preserving structure
+    extractedText = extractedText
+      .replace(/\r\n/g, '\n')
+      .replace(/\t/g, ' ')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+
+    return res.json({
+      text: extractedText,
+      filename: filename || 'resume',
+      characterCount: extractedText.length
+    });
+  } catch (err) {
+    console.error('Error in /api/parse-resume:', err);
+    return res.status(500).json({ error: 'Failed to parse resume file: ' + err.message });
+  }
+});
 
 // 1. POST /api/gemini
 // Calls Gemini API securely without exposing GEMINI_API_KEY to browser
