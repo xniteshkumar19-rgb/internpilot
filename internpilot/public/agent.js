@@ -354,7 +354,7 @@ async function runAgent(resumeText, postingText, log, options = {}) {
   if (hasResume && (startStep === "read" || startStep === "scam" || startStep === "match" || startStep === "email")) {
     log({
       type: "step-start",
-      title: "Drafting your email...",
+      title: "Preparing your application email...",
       icon: "mail",
       loading: true
     });
@@ -371,8 +371,11 @@ async function runAgent(resumeText, postingText, log, options = {}) {
         });
       } else {
         log({
-          type: "step-error",
-          text: "Email draft unavailable"
+          type: "email-error",
+          title: "Email Draft Unavailable",
+          text: "Cached email draft unavailable in demo data.",
+          errorType: "demoMissing",
+          canRetry: false
         });
         log({
           type: "decision",
@@ -383,47 +386,78 @@ async function runAgent(resumeText, postingText, log, options = {}) {
       try {
         const emailFn = typeof draftEmail === "function" ? draftEmail : (globalThis && globalThis.draftEmail);
         if (typeof emailFn === "function") {
-          const emailDraft = await emailFn(state.resumeText, state.details, state.match);
-          state.email = emailDraft;
+          const emailResult = await emailFn(state.resumeText, state.details, state.match);
 
-          if (emailDraft && (emailDraft.subject || emailDraft.body)) {
+          if (emailResult && !emailResult.error && (emailResult.subject || emailResult.body)) {
+            state.email = emailResult;
             log({
               type: "email-card",
               title: "✓ Drafting your email: Draft ready for review",
-              subject: emailDraft.subject || "",
-              body: emailDraft.body || "",
+              subject: emailResult.subject || "",
+              body: emailResult.body || "",
               contactEmail: state.details?.contactEmail || null
             });
           } else {
-            // Failure or offline
+            // Failure with specific error
+            const errorMsg = emailResult?.message || "Email draft unavailable";
+            const errorType = emailResult?.errorType || "general";
+            const canRetry = emailResult?.canRetry !== false;
+
             log({
-              type: "step-error",
-              text: "Email draft unavailable"
+              type: "email-error",
+              title: "Email Draft Unavailable",
+              text: errorMsg,
+              errorType,
+              canRetry,
+              onRetry: () => {
+                log({
+                  type: "decision",
+                  text: "Retrying application email generation..."
+                });
+                return runAgent(state.resumeText, state.postingText, log, {
+                  ...options,
+                  existingState: state,
+                  startStep: "email"
+                });
+              }
             });
             log({
               type: "decision",
-              text: "Decision: email draft unavailable, skipping email step."
+              text: `Decision: ${errorMsg}`
             });
           }
         } else {
           log({
-            type: "step-error",
-            text: "Email draft unavailable"
+            type: "email-error",
+            title: "Email Draft Unavailable",
+            text: "AI service is not configured.",
+            errorType: "apiKeyMissing",
+            canRetry: false
           });
           log({
             type: "decision",
-            text: "Decision: email draft unavailable, skipping email step."
+            text: "Decision: AI service is not configured."
           });
         }
       } catch (err) {
         console.error("Step D error:", err);
         log({
-          type: "step-error",
-          text: "Email draft unavailable"
+          type: "email-error",
+          title: "Email Draft Unavailable",
+          text: "Unable to connect to the AI service.",
+          errorType: "network",
+          canRetry: true,
+          onRetry: () => {
+            return runAgent(state.resumeText, state.postingText, log, {
+              ...options,
+              existingState: state,
+              startStep: "email"
+            });
+          }
         });
         log({
           type: "decision",
-          text: "Decision: email draft unavailable, skipping email step."
+          text: "Decision: email drafting encountered an error."
         });
       }
     }

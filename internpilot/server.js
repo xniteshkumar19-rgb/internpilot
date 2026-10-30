@@ -1,8 +1,8 @@
 // ==========================================
 // GEMINI MODEL CONFIGURATION
-// (Easy to change model name constant at top)
+// (Easy to change model name constant or env var)
 // ==========================================
-const GEMINI_MODEL = "gemini-1.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
 const path = require('path');
 const fs = require('fs');
@@ -95,19 +95,28 @@ app.post('/api/parse-resume', async (req, res) => {
 // Calls Gemini API securely without exposing GEMINI_API_KEY to browser
 app.post('/api/gemini', async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, responseMimeType } = req.body;
     if (!prompt || typeof prompt !== 'string') {
-      return res.status(400).json({ error: 'Valid prompt string is required' });
+      return res.status(400).json({ error: 'Valid prompt string is required', code: 'INVALID_PROMPT' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim().replace(/^["']|["']$/g, '');
     if (!apiKey) {
-      return res.status(500).json({
-        error: 'GEMINI_API_KEY is not configured in .env file. Please add your Gemini API key.'
+      return res.status(503).json({
+        error: 'AI service is not configured.',
+        code: 'API_KEY_MISSING'
       });
     }
 
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+
+    const generationConfig = {
+      temperature: 0.2,
+      maxOutputTokens: 800
+    };
+    if (responseMimeType === 'application/json' || (prompt.includes('JSON') && !prompt.includes('text/plain'))) {
+      generationConfig.responseMimeType = 'application/json';
+    }
 
     const apiResponse = await fetch(apiUrl, {
       method: 'POST',
@@ -120,27 +129,68 @@ app.post('/api/gemini', async (req, res) => {
             parts: [{ text: prompt }]
           }
         ],
-        generationConfig: {
-          temperature: 0.2
-        }
+        generationConfig
       })
     });
 
     if (!apiResponse.ok) {
       const errorText = await apiResponse.text();
-      console.error(`Gemini API returned ${apiResponse.status}:`, errorText);
+      console.error(`Gemini API error (HTTP ${apiResponse.status}):`, errorText);
+
+      let friendlyMessage = 'AI service encountered an error.';
+      let errorCode = 'API_ERROR';
+
+      if (apiResponse.status === 400) {
+        if (errorText.includes('API_KEY_INVALID') || errorText.includes('not valid') || errorText.includes('API key')) {
+          friendlyMessage = 'AI service is not configured.';
+          errorCode = 'API_KEY_INVALID';
+        } else {
+          friendlyMessage = 'The AI returned an unexpected response.';
+          errorCode = 'INVALID_REQUEST';
+        }
+      } else if (apiResponse.status === 401 || apiResponse.status === 403) {
+        friendlyMessage = 'AI service is not configured.';
+        errorCode = 'API_KEY_INVALID';
+      } else if (apiResponse.status === 429) {
+        friendlyMessage = 'AI request limit reached. Please try again later.';
+        errorCode = 'RATE_LIMIT';
+      } else if (apiResponse.status >= 500) {
+        friendlyMessage = 'AI service is temporarily unavailable. Please retry.';
+        errorCode = 'SERVICE_OVERLOADED';
+      }
+
       return res.status(apiResponse.status).json({
-        error: `Gemini API error: ${apiResponse.statusText}`
+        error: friendlyMessage,
+        code: errorCode
       });
     }
 
     const data = await apiResponse.json();
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const candidate = data.candidates?.[0];
+    const answer = candidate?.content?.parts?.[0]?.text || '';
+    const finishReason = candidate?.finishReason;
+
+    if (!answer) {
+      if (finishReason && finishReason !== 'STOP') {
+        return res.status(422).json({
+          error: 'The AI returned an unexpected response.',
+          code: 'FILTERED_RESPONSE',
+          finishReason
+        });
+      }
+      return res.status(502).json({
+        error: 'The AI returned an unexpected response.',
+        code: 'EMPTY_RESPONSE'
+      });
+    }
 
     return res.json({ answer });
   } catch (err) {
-    console.error('Server error handling /api/gemini:', err);
-    return res.status(500).json({ error: 'Internal server error while contacting Gemini API' });
+    console.error('Server error in /api/gemini:', err.message);
+    return res.status(503).json({
+      error: 'Unable to connect to the AI service.',
+      code: 'NETWORK_ERROR'
+    });
   }
 });
 
