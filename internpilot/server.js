@@ -416,12 +416,61 @@ Return ONLY a valid JSON object with these keys:
 // ==========================================
 let sourceFinder = null;
 let searchAdapter = null;
+let redirectInspector = null;
 try {
   sourceFinder = require('./source-finder-engine');
   searchAdapter = require('./search-adapter');
+  redirectInspector = require('./redirect-inspector');
 } catch (e) {
   console.warn('Source finder modules not available:', e.message);
 }
+
+// Simple per-IP rate limiter for redirect checks (10 requests per minute)
+const redirectRateLimitMap = new Map();
+function redirectRateLimitMiddleware(req, res, next) {
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const maxRequests = 10;
+
+  const record = redirectRateLimitMap.get(ip);
+  if (!record || now - record.startTime > windowMs) {
+    redirectRateLimitMap.set(ip, { startTime: now, count: 1 });
+    return next();
+  }
+
+  if (record.count >= maxRequests) {
+    return res.status(429).json({
+      ok: false,
+      code: 'rate_limited',
+      message: 'Too many redirect check requests. Rate limit is 10 requests per minute.'
+    });
+  }
+
+  record.count++;
+  return next();
+}
+
+// POST /api/redirect-check
+// Follows and validates redirect hops one-by-one under strict SSRF protections
+app.post('/api/redirect-check', redirectRateLimitMiddleware, async (req, res) => {
+  try {
+    const { url, isDemo } = req.body || {};
+    if (!url || typeof url !== 'string' || !url.trim()) {
+      return res.status(400).json({ ok: false, code: 'invalid_url', message: 'A valid URL string is required.' });
+    }
+
+    if (!redirectInspector) {
+      return res.status(503).json({ ok: false, code: 'unreachable', message: 'Redirect Inspector engine is not loaded on this server.' });
+    }
+
+    const result = await redirectInspector.inspectRedirectChain(url.trim(), { isDemo: Boolean(isDemo) });
+    return res.json(result);
+  } catch (err) {
+    console.error('Error in /api/redirect-check:', err);
+    return res.status(500).json({ ok: false, code: 'unreachable', message: 'Internal server error: ' + err.message });
+  }
+});
 
 // GET /api/source-finder/status
 app.get('/api/source-finder/status', (req, res) => {
@@ -434,7 +483,7 @@ app.get('/api/source-finder/status', (req, res) => {
 // POST /api/source-finder/verify
 app.post('/api/source-finder/verify', async (req, res) => {
   try {
-    const { url, isDemo, rawHtml } = req.body;
+    const { url, isDemo, rawHtml } = req.body || {};
     if (!url || typeof url !== 'string' || !url.trim()) {
       return res.status(400).json({ error: 'A valid internship URL is required.' });
     }
@@ -459,7 +508,7 @@ app.post('/api/source-finder/verify', async (req, res) => {
 // Compares submitted third-party posting with student-provided official careers URL
 app.post('/api/source-finder/assisted-compare', async (req, res) => {
   try {
-    const { submittedUrl, officialUrl, isDemo, submittedHtml, officialHtml } = req.body;
+    const { submittedUrl, officialUrl, isDemo, submittedHtml, officialHtml } = req.body || {};
     if (!submittedUrl || typeof submittedUrl !== 'string' || !submittedUrl.trim()) {
       return res.status(400).json({ error: 'A valid submitted internship URL is required.' });
     }

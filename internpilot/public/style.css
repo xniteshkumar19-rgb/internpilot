@@ -3864,3 +3864,84 @@ mark.evidence-mark {
   font-size: 0.82rem;
   color: #34d399;
 }
+
+
+/* ============================================================
+   REDIRECT INSPECTOR STYLES
+   ============================================================ */
+.redirect-inspector-card {
+  background: rgba(14, 20, 36, 0.7);
+  border: 1px solid rgba(45, 212, 191, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.95rem 1.15rem;
+  margin-bottom: 1rem;
+}
+
+.redirect-chain-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0;
+}
+
+.redirect-hop-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  color: var(--text-main);
+}
+
+.redirect-hop-node.final-hop {
+  background: rgba(45, 212, 191, 0.14);
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #5eead4;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(45, 212, 191, 0.15);
+}
+
+.hop-status-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.status-3xx { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.status-2xx { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+.redirect-arrow {
+  color: var(--text-faint);
+  font-size: 0.85rem;
+}
+
+.redirect-summary-text {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 0.45rem;
+}
+
+.redirect-company-match {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border-left: 2px solid #38bdf8;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0 4px 4px 0;
+}
+
+.redirect-js-note {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  margin-top: 0.35rem;
+  font-style: italic;
+}

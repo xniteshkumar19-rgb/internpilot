@@ -1706,7 +1706,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function renderSourceFinderResult(res) {
+  function renderSourceFinderResult(res, redirectData = null) {
     if (!sourceFinderResult) return;
     sourceFinderResult.style.display = "block";
 
@@ -1726,6 +1726,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const info = res.submittedInfo || res.extractedJobInfo || {};
     const official = res.officialListing || {};
     const evidence = res.evidence || {};
+
+    // -------------------------------------------------------------
+    // DEDICATED ERROR STATES (Invalid URL, Empty Input, Server Error)
+    // -------------------------------------------------------------
+    if (state === "INVALID_URL" || state === "SERVER_ERROR") {
+      sourceFinderResult.innerHTML = `
+        <div class="source-result-box source-result-state-D" style="border-left: 3px solid #ef4444;">
+          <div class="source-result-badge-row">
+            <span class="source-badge" style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35);">
+              ✕ ${escapeHtml(res.label || (state === "INVALID_URL" ? "Invalid URL" : "Server Error"))}
+            </span>
+          </div>
+          <div style="margin-top: 0.6rem;">
+            <strong style="color: #f1f5f9; font-size: 0.95rem;">${escapeHtml(res.error || "Action required")}</strong>
+            <p style="margin: 0.35rem 0 0 0; color: #94a3b8; font-size: 0.85rem;">
+              ${escapeHtml(evidence.explanation || "Please check the entered URL and try again.")}
+            </p>
+            ${evidence.sourceUrl ? `<div style="margin-top: 0.4rem; font-size: 0.8rem; color: #64748b; word-break: break-all;">Input: <code>${escapeHtml(evidence.sourceUrl)}</code></div>` : ""}
+            <div style="margin-top: 0.75rem;">
+              <button type="button" class="btn-secondary" onclick="var p=document.getElementById('posting'); if(p) p.scrollIntoView({ behavior: 'smooth' });">
+                Paste Job Description Manually
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
     const searchLinks = res.searchLinks || {
       google: `https://www.google.com/search?q=${encodeURIComponent(`"${info.companyName || ''}" "${info.jobTitle || ''}" careers`)}`,
       bing: `https://www.bing.com/search?q=${encodeURIComponent(`"${info.companyName || ''}" "${info.jobTitle || ''}" careers`)}`
@@ -1733,6 +1761,56 @@ document.addEventListener("DOMContentLoaded", () => {
     const isDemoModeResult = Boolean(res.isDemo || (demoModeToggle && demoModeToggle.checked));
     const roleName = official.jobTitle || info.jobTitle || "Internship Role";
     const compName = official.companyName || info.companyName || "Organization";
+
+    // -------------------------------------------------------------
+    // REDIRECT CHAIN INSPECTOR CARD HTML
+    // -------------------------------------------------------------
+    let redirectHtml = "";
+    if (redirectData && redirectData.ok && redirectData.chain && redirectData.chain.length > 0) {
+      const chain = redirectData.chain;
+      const finalDomain = redirectData.finalDomain || (chain[chain.length - 1] && chain[chain.length - 1].domain) || "";
+      const rawComp = (compName || "").toLowerCase().trim();
+      const normComp = rawComp.replace(/[^a-z0-9]/g, '');
+      const normFinal = (finalDomain || "").toLowerCase();
+      const domainContainsCompany = normComp.length >= 3 && (normFinal.includes(normComp) || rawComp.includes(normFinal.split('.')[0]));
+
+      const hopsHtml = chain.map((hop, idx) => {
+        const isFinal = idx === chain.length - 1;
+        const is3xx = hop.status >= 300 && hop.status < 400;
+        const badgeClass = is3xx ? 'status-3xx' : 'status-2xx';
+        return `
+          <span class="redirect-hop-node ${isFinal ? 'final-hop' : ''}">
+            <span class="hop-domain">${escapeHtml(hop.domain)}</span>
+            <span class="hop-status-badge ${badgeClass}">${hop.status}</span>
+          </span>
+          ${!isFinal ? `<span class="redirect-arrow">→</span>` : ''}
+        `;
+      }).join('');
+
+      redirectHtml = `
+        <div class="redirect-inspector-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <strong style="font-size: 0.85rem; color: #5eead4; display: flex; align-items: center; gap: 0.4rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Redirect Inspector
+            </strong>
+            <span style="font-size: 0.74rem; color: #94a3b8;">${chain.length - 1} redirect hop(s)</span>
+          </div>
+          <div class="redirect-chain-flow">
+            ${hopsHtml}
+          </div>
+          <div class="redirect-summary-text">
+            This link ends at <strong>${escapeHtml(finalDomain)}</strong>. A redirect shows where a link goes, not who published the job first.
+          </div>
+          ${domainContainsCompany ? `
+            <div class="redirect-company-match">
+              The final domain contains the company name. This does not prove it is the official site.
+            </div>
+          ` : ''}
+          <span class="redirect-js-note">(Note: JavaScript-based redirects are not detected)</span>
+        </div>
+      `;
+    }
 
     // -------------------------------------------------------------
     // CASE 1: ASSISTED SOURCE VERIFICATION MODE (No API key needed)
@@ -1747,6 +1825,8 @@ document.addEventListener("DOMContentLoaded", () => {
               ${isDemoModeResult ? `<span class="source-badge" style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">⚡ Demo Mode</span>` : ""}
             </div>
           </div>
+
+          ${redirectHtml}
 
           <div class="source-result-title">${escapeHtml(roleName)} at ${escapeHtml(compName)}</div>
 
@@ -1881,6 +1961,8 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
           ${res.confidenceScore ? `<span style="font-size: 0.8rem; color: #94a3b8;">Match Confidence: <strong>${res.confidenceScore}%</strong></span>` : ""}
         </div>
+
+        ${redirectHtml}
 
         <div class="source-result-title">${escapeHtml(roleName)} at ${escapeHtml(compName)}</div>
 
@@ -2132,33 +2214,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const analyseAssistedBtn = document.getElementById("btn-analyse-assisted-internship");
     if (analyseAssistedBtn) {
       analyseAssistedBtn.addEventListener("click", () => {
-        wireAnalyseButton(
-          official.jobTitle || submitted.jobTitle,
-          official.companyName || submitted.companyName,
-          official.location || submitted.location,
-          official.stipend || submitted.stipend,
-          submitted.requiredSkills,
-          submitted.description
-        );
-        analyseAssistedBtn.click();
-      });
-    }
-  }
-            official.stipend || info.stipend ? `Stipend: ${official.stipend || info.stipend}` : "",
-            info.requiredSkills && info.requiredSkills.length > 0 ? `Required Skills: ${info.requiredSkills.join(", ")}` : "",
-            info.description ? `\nJob Description:\n${info.description}` : ""
-          ].filter(Boolean).join("\n");
+        const title = official.jobTitle || submitted.jobTitle || "Intern";
+        const company = official.companyName || submitted.companyName || "Organization";
+        const location = official.location || submitted.location || "";
+        const stipend = official.stipend || submitted.stipend || "";
+        const skills = submitted.requiredSkills || [];
+        const description = submitted.description || "";
 
+        if (customRoleInput && title) customRoleInput.value = title;
+        if (customCompanyInput && company) customCompanyInput.value = company;
+        if (postingInput) {
+          const combinedDesc = [
+            `Role: ${title}`,
+            `Company: ${company}`,
+            location ? `Location: ${location}` : "",
+            stipend ? `Stipend: ${stipend}` : "",
+            skills && skills.length > 0 ? `Required Skills: ${skills.join(", ")}` : "",
+            description ? `\nJob Description:\n${description}` : ""
+          ].filter(Boolean).join("\n");
           postingInput.value = combinedDesc;
         }
 
-        // Scroll to posting input card
         const postingCard = document.getElementById("posting");
         if (postingCard) {
           postingCard.scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
-        // Automatically trigger analysis
         if (runBtn && !isAgentRunning) {
           setTimeout(() => runBtn.click(), 600);
         }
@@ -2168,52 +2249,178 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function executeSourceSearch(targetUrl) {
     if (!targetUrl || !targetUrl.trim()) {
-      alert("Please enter a valid internship posting URL.");
+      renderSourceFinderResult({
+        state: "INVALID_URL",
+        label: "URL Required",
+        error: "Please enter an internship posting URL to find its original source.",
+        evidence: {
+          explanation: "Input field was empty. Paste an internship link from LinkedIn, Internshala, Indeed, or any career portal."
+        }
+      });
+      if (sourceUrlInput) sourceUrlInput.focus();
+      return;
+    }
+
+    const trimmedUrl = targetUrl.trim();
+    if (!/^https?:\/\//i.test(trimmedUrl)) {
+      renderSourceFinderResult({
+        state: "INVALID_URL",
+        label: "Invalid URL Protocol",
+        error: "Please enter a valid web URL starting with http:// or https://",
+        evidence: {
+          sourceUrl: trimmedUrl,
+          explanation: "Web addresses must start with http:// or https://. Example: https://www.linkedin.com/jobs/view/123456"
+        }
+      });
       if (sourceUrlInput) sourceUrlInput.focus();
       return;
     }
 
     if (btnFindSource) {
       btnFindSource.disabled = true;
-      btnFindSource.innerHTML = `<span>Searching...</span>`;
+      btnFindSource.innerHTML = `
+        <span class="spinner-inline" style="display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,0.2); border-top-color:#042f2e; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
+        <span>Checking redirects...</span>
+      `;
     }
 
-    // Step 1: Reading
-    setStepperStep(1);
-    await new Promise(r => setTimeout(r, 400));
+    // Visible in-progress state immediately
+    if (sourceFinderResult) {
+      sourceFinderResult.style.display = "block";
+      sourceFinderResult.innerHTML = `
+        <div class="source-result-box" style="border: 1px dashed rgba(45, 212, 191, 0.4); background: rgba(14, 20, 36, 0.65); padding: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="pulse-dot" style="width: 10px; height: 10px;"></span>
+            <span id="sf-live-progress-msg" style="font-size: 0.9rem; font-weight: 600; color: #5eead4;">Checking where this link goes...</span>
+          </div>
+          <p style="margin: 0.4rem 0 0 0; font-size: 0.82rem; color: #94a3b8;">Following redirects hop-by-hop under SSRF protection to detect the final domain.</p>
+        </div>
+      `;
+    }
 
-    // Step 2: Identifying
+    // Step 1: Checking redirects
+    setStepperStep(1);
+
+    const isDemo = Boolean(demoModeToggle && demoModeToggle.checked);
+
+    // Call Redirect Inspector
+    let redirectData = null;
+    try {
+      const redirectResp = await fetch("/api/redirect-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmedUrl, isDemo })
+      });
+      redirectData = await redirectResp.json();
+    } catch (netErr) {
+      console.warn("Redirect check network error:", netErr);
+      redirectData = { ok: false, code: "unreachable", message: "Network connection failed while inspecting redirects." };
+    }
+
+    if (!redirectData || !redirectData.ok) {
+      const errorCode = (redirectData && redirectData.code) || "unreachable";
+      const errorMsg = (redirectData && redirectData.message) || "Failed to inspect link redirects.";
+      const errorTitles = {
+        blocked_destination: "Blocked Destination Address",
+        redirect_loop: "Redirect Loop Detected",
+        too_many_redirects: "Too Many Redirects",
+        timeout: "Redirect Inspection Timed Out",
+        invalid_url: "Invalid URL Address",
+        rate_limited: "Rate Limit Exceeded",
+        unreachable: "Destination Unreachable"
+      };
+
+      renderSourceFinderResult({
+        state: "INVALID_URL",
+        label: errorTitles[errorCode] || "Redirect Check Failed",
+        error: errorMsg,
+        evidence: {
+          sourceUrl: trimmedUrl,
+          explanation: `Link analysis could not complete (${errorCode}). A redirect shows where a link goes, not who published the job first. You can still paste the job details directly to run CareerMatch.`
+        }
+      });
+      return;
+    }
+
+    // Step 2: Extracting job information
     setStepperStep(2);
-    await new Promise(r => setTimeout(r, 400));
+    const progressMsg = document.getElementById("sf-live-progress-msg");
+    if (progressMsg) progressMsg.textContent = "Extracting job title, company & requirements...";
+    if (btnFindSource) {
+      btnFindSource.innerHTML = `
+        <span class="spinner-inline" style="display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,0.2); border-top-color:#042f2e; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
+        <span>Extracting info...</span>
+      `;
+    }
+    await new Promise(r => setTimeout(r, 300));
 
     // Step 3: Searching
     setStepperStep(3);
-
-    const isDemo = Boolean(demoModeToggle && demoModeToggle.checked);
+    if (progressMsg) progressMsg.textContent = "Checking verified official careers sources & ATS domains...";
+    if (btnFindSource) {
+      btnFindSource.innerHTML = `
+        <span class="spinner-inline" style="display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,0.2); border-top-color:#042f2e; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
+        <span>Searching sources...</span>
+      `;
+    }
 
     try {
       const resp = await fetch("/api/source-finder/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: targetUrl.trim(), isDemo })
+        body: JSON.stringify({ url: trimmedUrl, isDemo, finalUrl: redirectData.finalUrl })
       });
 
       // Step 4: Comparing
       setStepperStep(4);
-      await new Promise(r => setTimeout(r, 400));
+      if (progressMsg) progressMsg.textContent = "Comparing role details and matching evidence...";
+      await new Promise(r => setTimeout(r, 250));
 
       // Step 5: Preparing Report
       setStepperStep(5);
-      await new Promise(r => setTimeout(r, 300));
+      if (progressMsg) progressMsg.textContent = "Preparing verification report...";
+      await new Promise(r => setTimeout(r, 200));
+
+      if (!resp.ok) {
+        let errData = {};
+        try { errData = await resp.json(); } catch {}
+        if (resp.status === 400) {
+          renderSourceFinderResult({
+            state: "INVALID_URL",
+            label: "Invalid URL Request",
+            error: errData.error || "The submitted URL could not be processed.",
+            evidence: { explanation: "Server rejected the URL format or protocol." }
+          }, redirectData);
+        } else if (resp.status === 503) {
+          renderSourceFinderResult({
+            state: "SERVER_ERROR",
+            label: "Service Temporarily Unavailable",
+            error: errData.error || "Source Finder backend engine is temporarily unavailable.",
+            evidence: { explanation: "The server could not initialize the verification engine." }
+          }, redirectData);
+        } else {
+          renderSourceFinderResult({
+            state: "SERVER_ERROR",
+            label: `Server Error (${resp.status})`,
+            error: errData.error || "An error occurred on the verification server.",
+            evidence: { explanation: "Please try again or use Assisted Verification Mode." }
+          }, redirectData);
+        }
+        return;
+      }
 
       const data = await resp.json();
-      renderSourceFinderResult(data);
+      renderSourceFinderResult(data, redirectData);
     } catch (err) {
-      console.error("Source verification error:", err);
+      console.error("Source verification network error:", err);
       renderSourceFinderResult({
-        state: "UNABLE_TO_VERIFY",
-        evidence: { explanation: "Network error occurred while contacting the verification service." }
-      });
+        state: "SERVER_ERROR",
+        label: "Unable to Access Verification Service",
+        error: "Network connection failed while contacting the verification service.",
+        evidence: {
+          explanation: "Backend server may be restarting or unreachable. Check your network or try again in a moment."
+        }
+      }, redirectData);
     } finally {
       if (btnFindSource) {
         btnFindSource.disabled = false;
