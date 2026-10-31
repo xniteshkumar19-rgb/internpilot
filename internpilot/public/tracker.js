@@ -1,3 +1,39 @@
+// Mobile sidebar toggle
+document.addEventListener("DOMContentLoaded", () => {
+  const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+  const appSidebar = document.getElementById("app-sidebar");
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  const sidebarCloseBtn = document.getElementById("sidebar-close-btn");
+
+  if (mobileMenuToggle && appSidebar) {
+    mobileMenuToggle.addEventListener("click", () => {
+      appSidebar.classList.add("open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.add("active");
+    });
+  }
+  if (sidebarCloseBtn && appSidebar) {
+    sidebarCloseBtn.addEventListener("click", () => {
+      appSidebar.classList.remove("open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+    });
+  }
+  if (sidebarBackdrop && appSidebar) {
+    sidebarBackdrop.addEventListener("click", () => {
+      appSidebar.classList.remove("open");
+      sidebarBackdrop.classList.remove("active");
+    });
+  }
+  if (appSidebar) {
+    appSidebar.querySelectorAll(".sidebar-nav-item").forEach(item => {
+      item.addEventListener("click", () => {
+        if (window.innerWidth <= 992) {
+          appSidebar.classList.remove("open");
+          if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+        }
+      });
+    });
+  }
+});
 /**
  * InternPilot - Tracker Controller
  * 

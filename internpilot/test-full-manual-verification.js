@@ -78,7 +78,7 @@ async function runAudit() {
 
   // C. Test Postings
   const postingsRes = await simulateRoute(app, 'GET', '/api/test-postings');
-  const postingsData = JSON.parse(postingsRes.data);
+  const postingsData = typeof postingsRes.data === 'string' ? JSON.parse(postingsRes.data) : postingsRes.data;
   assert(postingsRes.status === 200 && Array.isArray(postingsData) && postingsData.length === 7, `GET /api/test-postings returns 7 sample postings (Got: ${postingsData.length})`);
 
   // C. Sample Resume

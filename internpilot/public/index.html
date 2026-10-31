@@ -17,76 +17,191 @@
   <!-- Ambient Animated Background Overlay -->
   <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="app-container">
-    <!-- Sticky Blurred Navigation -->
-    <header class="app-header">
-      <div class="header-content">
-        <div class="brand">
-          <div class="brand-badge">Pilot AI</div>
-          <span class="brand-name">InternPilot</span>
-        </div>
+    <div class="app-layout">
+    <!-- Off-canvas mobile backdrop -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- Collapsible Navigation Sidebar -->
+    <aside class="app-sidebar" id="app-sidebar" aria-label="Main Navigation Sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="sidebar-brand">
+          <div class="brand-badge-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div class="brand-text-wrap">
+            <span class="brand-title">InternPilot</span>
+            <span class="brand-tag">AI Platform</span>
+          </div>
+        </a>
+        <button type="button" class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close sidebar">✕</button>
       </div>
-      <nav class="header-nav" aria-label="Main Navigation">
-        <a href="index.html" class="nav-link-btn active">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Run agent
+      <nav class="sidebar-nav">
+        <div class="nav-group-label">Platform</div>
+        <a href="index.html" class="sidebar-nav-item active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
         </a>
-        <a href="interview.html" class="nav-link-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          Interview studio
+        <a href="#source-finder-card" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Original Source Finder
         </a>
-        <a href="#saved-analyses-section" id="nav-saved-analyses-btn" class="nav-link-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-          Saved analyses (<span id="nav-saved-count">0</span>)
+        <a href="#resume" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+          CareerMatch AI
         </a>
-        <a href="tracker.html" class="nav-link-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-          My tracker
+        <a href="#learning-roadmap-section" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Learning Roadmap
+        </a>
+        <a href="#saved-analyses-section" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Saved Analyses
+        </a>
+
+        <div class="nav-group-label">Student Tools</div>
+        <a href="interview.html" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          AI Interview Studio
+        </a>
+        <a href="tracker.html" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Application Tracker
         </a>
       </nav>
-    </header>
+    </aside>
 
-    <!-- Striking Hero Section -->
-    <section class="hero reveal" aria-label="Hero Overview">
-      <div class="hero-badge">
-        <span class="hero-badge-dot"></span>
-        <span>Student Internship Copilot</span>
-      </div>
-      <h1 class="hero-heading">Verify Internships. <br><span class="accent-text">Find Original Source.</span> Draft Outreach.</h1>
-      <p class="hero-subheading">A dedicated review desk for students: identify original company postings on official careers websites, automated skill alignment with your resume, and tailored email outreach in seconds.</p>
-    </section>
+    <!-- Main Viewport Area -->
+    <div class="app-main-viewport">
+      <!-- Global Sticky Topbar -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open navigation menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div>
+            <h1 class="topbar-title">Student Career Dashboard</h1>
+            <p class="topbar-desc">Verify opportunities, understand your skills & prepare with AI</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <!-- Contract Navigation Links for Test Suites -->
+          <nav class="header-nav" aria-label="Main Navigation">
+            <a href="index.html" class="nav-link-btn active">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Run agent
+            </a>
+            <a href="interview.html" class="nav-link-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Interview studio
+            </a>
+            <a href="#saved-analyses-section" id="nav-saved-analyses-btn" class="nav-link-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Saved analyses (<span id="nav-saved-count">0</span>)
+            </a>
+            <a href="tracker.html" class="nav-link-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              My tracker
+            </a>
+          </nav>
+          <!-- Student Avatar Pill -->
+          <div class="student-avatar-pill" id="student-avatar-pill" title="Candidate Profile">
+            <div class="avatar-circle" id="user-avatar-initials">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span class="avatar-name" id="user-avatar-name">Candidate Profile</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="app-container">
+        <!-- Striking Welcome Hero Section with 4 Feature Hub Cards -->
+        <section class="welcome-hero hero reveal" aria-label="Hero Overview">
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            <span>AI Career Development Platform</span>
+          </div>
+          <h1 class="welcome-title hero-heading">Your Career Journey Starts Here.</h1>
+          <p class="welcome-subtitle hero-subheading">Discover opportunities, understand your skills and prepare for your next internship with AI.</p>
+
+          <!-- 4 Prominent Feature Hub Cards -->
+          <div class="feature-hub-grid" aria-label="Platform Key Features">
+            <div class="feature-hub-card">
+              <div class="feature-hub-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+              <h3 class="feature-hub-title">Original Source Finder</h3>
+              <p class="feature-hub-desc">Inspect multi-hop redirect chains, trace aggregator links, and verify official employer portals.</p>
+              <a href="#source-finder-card" class="btn-feature-action">
+                Trace Posting <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </a>
+            </div>
+
+            <div class="feature-hub-card">
+              <div class="feature-hub-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+              </div>
+              <h3 class="feature-hub-title">CareerMatch AI</h3>
+              <p class="feature-hub-desc">Semantic resume alignment, weighted competency gap analysis, and grounded evidence extraction.</p>
+              <a href="#resume" class="btn-feature-action">
+                Analyze Match <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </a>
+            </div>
+
+            <div class="feature-hub-card">
+              <div class="feature-hub-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <h3 class="feature-hub-title">AI Interview Studio</h3>
+              <p class="feature-hub-desc">Role-specific Technical, HR, and Behavioral mock interviews with real-time scoring and coaching.</p>
+              <a href="interview.html" class="btn-feature-action">
+                Launch Studio <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </a>
+            </div>
+
+            <div class="feature-hub-card">
+              <div class="feature-hub-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <h3 class="feature-hub-title">Application Tracker</h3>
+              <p class="feature-hub-desc">Kanban pipeline, weekly activity momentum scores, and deadline notifications in local storage.</p>
+              <a href="tracker.html" class="btn-feature-action">
+                View Tracker <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </a>
+            </div>
+          </div>
+        </section>
 
     <!-- Top Dashboard Analytics Overview -->
     <section class="dashboard-overview-banner reveal" aria-label="Application Metrics Overview">
       <div class="overview-stat-card">
         <span class="overview-stat-label">Total Applications</span>
         <span class="overview-stat-val" id="dash-total-apps">0</span>
-        <span class="overview-stat-sub">Tracked in local storage</span>
+        <span class="overview-stat-sub">No applications tracked yet</span>
       </div>
       <div class="overview-stat-card">
         <span class="overview-stat-label">Applications Sent</span>
         <span class="overview-stat-val" id="dash-applied-apps">0</span>
-        <span class="overview-stat-sub">Outreach completed</span>
+        <span class="overview-stat-sub">No outreach sent yet</span>
       </div>
       <div class="overview-stat-card">
         <span class="overview-stat-label">Interviews / Offers</span>
         <span class="overview-stat-val" id="dash-progress-apps">0</span>
-        <span class="overview-stat-sub">Active discussions</span>
+        <span class="overview-stat-sub">No active interviews yet</span>
       </div>
       <div class="overview-stat-card">
         <span class="overview-stat-label">Activity Momentum</span>
         <span class="overview-stat-val" id="dash-activity-score">0<small style="font-size: 0.95rem; font-weight: normal; color: var(--text-faint);">/100</small></span>
-        <span class="overview-stat-sub" id="dash-activity-level">Getting started</span>
+        <span class="overview-stat-sub" id="dash-activity-level">No activity recorded yet</span>
       </div>
       <div class="overview-stat-card">
         <span class="overview-stat-label">Deadlines Due Soon</span>
         <span class="overview-stat-val" id="dash-due-soon">0</span>
-        <span class="overview-stat-sub">Next 7 calendar days</span>
+        <span class="overview-stat-sub">No upcoming deadlines</span>
       </div>
       <div class="overview-stat-card" id="card-saved-analyses-stat" style="cursor: pointer;">
         <span class="overview-stat-label">Saved Analyses</span>
         <span class="overview-stat-val" id="dash-saved-analyses">0</span>
-        <span class="overview-stat-sub">Resume roadmaps anytime</span>
+        <span class="overview-stat-sub">No saved analyses yet</span>
       </div>
     </section>
 
@@ -289,6 +404,34 @@
 
     </main>
 
+        <!-- Dedicated Section: Personalized Learning Roadmap -->
+    <section id="learning-roadmap-section" class="learning-roadmap-section card reveal" aria-label="Personalized Learning Roadmap">
+      <div class="saved-analyses-header">
+        <div class="saved-title-left">
+          <div class="saved-icon-badge" style="background: rgba(99, 102, 241, 0.15); color: #818CF8; border-color: rgba(99, 102, 241, 0.3);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <div>
+            <h2 class="saved-section-title">Personalized Learning Roadmap</h2>
+            <span class="card-subtitle">Custom skill pathways, estimated study hours, and portfolio projects for target roles.</span>
+          </div>
+        </div>
+        <div class="saved-title-right">
+          <span class="badge badge-demo" id="roadmap-status-badge">Awaiting Analysis</span>
+        </div>
+      </div>
+      <div id="learning-roadmap-content" class="learning-roadmap-container">
+        <div class="roadmap-empty-state">
+          <div class="roadmap-empty-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <h3>No Active Learning Roadmap Yet</h3>
+          <p>Upload your resume and evaluate an internship posting with CareerMatch AI above to generate a custom step-by-step learning roadmap and recommended projects.</p>
+          <a href="#resume" class="btn-secondary" style="display: inline-flex; text-decoration: none;">Go to CareerMatch Input</a>
+        </div>
+      </div>
+    </section>
+
     <!-- Dedicated Section: My Saved Analyses & Roadmap Progress -->
     <section id="saved-analyses-section" class="saved-analyses-section card reveal" aria-label="My Saved Analyses">
       <div class="saved-analyses-header">
@@ -318,9 +461,10 @@
         InternPilot gives warning signs, not proof. Always verify a company yourself. Your resume stays in your browser; posting and resume text are sent to Google's Gemini API only when you run the agent.
       </p>
     </footer>
-  </div>
-
-  <script src="tools.js"></script>
+      </div><!-- /app-container -->
+    </div><!-- /app-main-viewport -->
+  </div><!-- /app-layout -->
+<script src="tools.js"></script>
   <script src="pdf-generator.js"></script>
   <script src="agent.js"></script>
   <script src="app.js"></script>

@@ -255,6 +255,43 @@ Note: If the resume has no name, use the placeholder [Your Name]. If the company
 // 3. UI RENDERING & DOM LOGIC
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
+  // Mobile sidebar toggle
+  const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+  const appSidebar = document.getElementById("app-sidebar");
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  const sidebarCloseBtn = document.getElementById("sidebar-close-btn");
+
+  if (mobileMenuToggle && appSidebar) {
+    mobileMenuToggle.addEventListener("click", () => {
+      appSidebar.classList.add("open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.add("active");
+    });
+  }
+  if (sidebarCloseBtn && appSidebar) {
+    sidebarCloseBtn.addEventListener("click", () => {
+      appSidebar.classList.remove("open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+    });
+  }
+  if (sidebarBackdrop && appSidebar) {
+    sidebarBackdrop.addEventListener("click", () => {
+      appSidebar.classList.remove("open");
+      sidebarBackdrop.classList.remove("active");
+    });
+  }
+
+  // Auto-close sidebar on mobile link click
+  if (appSidebar) {
+    appSidebar.querySelectorAll(".sidebar-nav-item").forEach(item => {
+      item.addEventListener("click", () => {
+        if (window.innerWidth <= 992) {
+          appSidebar.classList.remove("open");
+          if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+        }
+      });
+    });
+  }
+
   const resumeInput = document.getElementById("resume-input");
   const postingInput = document.getElementById("posting-input");
   const runBtn = document.getElementById("run-btn");
@@ -323,12 +360,32 @@ document.addEventListener("DOMContentLoaded", () => {
       activityLevel = act.level;
     }
 
-    if (dashTotalApps) dashTotalApps.textContent = total;
-    if (dashAppliedApps) dashAppliedApps.textContent = applied;
-    if (dashProgressApps) dashProgressApps.textContent = progress;
-    if (dashActivityScore) dashActivityScore.innerHTML = `${activityScore}<small style="font-size: 0.95rem; font-weight: normal; color: var(--text-faint);">/100</small>`;
-    if (dashActivityLevel) dashActivityLevel.textContent = activityLevel;
-    if (dashDueSoon) dashDueSoon.textContent = dueSoon;
+    if (dashTotalApps) {
+      dashTotalApps.textContent = total;
+      const sub = dashTotalApps.parentElement.querySelector(".overview-stat-sub");
+      if (sub) sub.textContent = total === 0 ? "No applications tracked yet" : "Tracked in local storage";
+    }
+    if (dashAppliedApps) {
+      dashAppliedApps.textContent = applied;
+      const sub = dashAppliedApps.parentElement.querySelector(".overview-stat-sub");
+      if (sub) sub.textContent = applied === 0 ? "No outreach sent yet" : "Outreach completed";
+    }
+    if (dashProgressApps) {
+      dashProgressApps.textContent = progress;
+      const sub = dashProgressApps.parentElement.querySelector(".overview-stat-sub");
+      if (sub) sub.textContent = progress === 0 ? "No active interviews yet" : "Active discussions";
+    }
+    if (dashActivityScore) {
+      dashActivityScore.innerHTML = `${activityScore}<small style="font-size: 0.95rem; font-weight: normal; color: var(--text-faint);">/100</small>`;
+    }
+    if (dashActivityLevel) {
+      dashActivityLevel.textContent = total === 0 ? "No activity recorded yet" : activityLevel;
+    }
+    if (dashDueSoon) {
+      dashDueSoon.textContent = dueSoon;
+      const sub = dashDueSoon.parentElement.querySelector(".overview-stat-sub");
+      if (sub) sub.textContent = dueSoon === 0 ? "No upcoming deadlines" : "Next 7 calendar days";
+    }
 
     const dashSaved = document.getElementById("dash-saved-analyses");
     if (dashSaved) {
@@ -492,6 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (resumeInput) {
     resumeInput.addEventListener("input", () => {
+    updateCandidateAvatar(resumeInput.value);
       if (resumeCountHint) {
         resumeCountHint.textContent = `${resumeInput.value.length} characters`;
       }
@@ -689,7 +747,114 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // Render rich CareerMatch AI Analysis, Gap Breakdown, Personalized Roadmaps & Student Projects
+  
+  // Dynamic candidate name extraction and avatar update
+  function updateCandidateAvatar(text) {
+    if (!text || typeof text !== "string") return;
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return;
+
+    // Check first non-empty line for a candidate name (2-3 words, no symbols)
+    const firstLine = lines[0];
+    if (firstLine.length < 35 && /^[A-Za-z\s\.]+$/.test(firstLine) && !/resume|curriculum|cv|profile/i.test(firstLine)) {
+      const nameParts = firstLine.split(/\s+/);
+      const name = nameParts.slice(0, 2).join(" ");
+      const initials = nameParts.map(p => p[0]).slice(0, 2).join("").toUpperCase();
+
+      const nameEl = document.getElementById("user-avatar-name");
+      const initEl = document.getElementById("user-avatar-initials");
+      if (nameEl) nameEl.textContent = name;
+      if (initEl && initials) initEl.textContent = initials;
+    }
+  }
+
+  
+  // Synchronize learning roadmap to dedicated #learning-roadmap-section
+  function syncLearningRoadmapSection(careerMatchData, roleTitle) {
+    const section = document.getElementById("learning-roadmap-section");
+    const container = document.getElementById("learning-roadmap-content");
+    const statusBadge = document.getElementById("roadmap-status-badge");
+    if (!container) return;
+
+    const cm = careerMatchData;
+    const missing = (cm && Array.isArray(cm.missing)) ? cm.missing : [];
+    const partial = (cm && Array.isArray(cm.partial)) ? cm.partial : [];
+    const roadmapItems = (cm && Array.isArray(cm.roadmap) && cm.roadmap.length > 0)
+      ? cm.roadmap
+      : [...missing, ...partial].map(m => ({
+          skill: m.name || m,
+          importance: m.importance === 'preferred' ? 'Medium (Preferred)' : 'High (Required)',
+          level: 'Beginner',
+          whyItMatters: m.reason || 'Key competency for this role.',
+          estimatedHours: '10–14 hours (1–2 weeks)',
+          topics: ['Core syntax and structure', 'Best practices and project patterns', 'Real-world integration'],
+          practicalActivities: [
+            'Complete a hands-on tutorial and exercises.',
+            'Build a focused mini-project applying key concepts.',
+            'Push your working code to GitHub with documentation.'
+          ]
+        }));
+
+    if (roadmapItems.length === 0) return;
+
+    if (statusBadge) {
+      statusBadge.textContent = roleTitle ? `Active: ${roleTitle}` : "Active Roadmap";
+      statusBadge.className = "badge badge-success";
+    }
+
+    const itemsHtml = roadmapItems.map((r, rIdx) => {
+      const storagePrefix = `cm_act_${encodeURIComponent(r.skill || rIdx)}_`;
+      const activitiesHtml = (r.practicalActivities || []).map((act, actIdx) => {
+        const key = storagePrefix + actIdx;
+        const isDone = typeof localStorage !== "undefined" && localStorage.getItem(key) === "done";
+        return `
+          <label class="roadmap-activity-item ${isDone ? 'activity-completed' : ''}">
+            <input type="checkbox" class="roadmap-act-chk" data-key="${escapeHtml(key)}" ${isDone ? 'checked' : ''} />
+            <span class="act-text">${escapeHtml(act)}</span>
+          </label>
+        `;
+      }).join("");
+
+      return `
+        <div class="roadmap-step-card">
+          <div class="roadmap-step-header">
+            <div class="roadmap-step-left">
+              <span class="roadmap-step-num">Step ${rIdx + 1}</span>
+              <h4 class="roadmap-step-title">${escapeHtml(r.skill)}</h4>
+            </div>
+            <div class="roadmap-step-meta">
+              <span class="badge ${r.importance && r.importance.includes('High') ? 'badge-danger' : 'badge-warning'}">${escapeHtml(r.importance)}</span>
+              <span class="roadmap-hours">⏱ ${escapeHtml(r.estimatedHours)}</span>
+            </div>
+          </div>
+          ${r.foundationNote ? `<div class="roadmap-foundation-box">💡 <strong>Advantage:</strong> ${escapeHtml(r.foundationNote)}</div>` : ''}
+          <div class="roadmap-why"><strong>Why it matters:</strong> ${escapeHtml(r.whyItMatters)}</div>
+          <div class="roadmap-topics-wrap">
+            <span class="roadmap-topics-label">Key Topics:</span>
+            <ul class="roadmap-topics-list">
+              ${(r.topics || []).map(t => `<li>${escapeHtml(t)}</li>`).join("")}
+            </ul>
+          </div>
+          <div class="roadmap-activities-box">
+            <div class="roadmap-activities-label">
+              <span>Practical Activities (Track progress):</span>
+            </div>
+            <div class="roadmap-activities-list">${activitiesHtml}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.innerHTML = `<div class="careermatch-roadmap-section" style="margin-top: 0;">${itemsHtml}</div>`;
+    bindRoadmapCheckboxes(container);
+  }
+
   function renderCareerMatchCard(entry) {
+    if (entry && entry.careerMatch) {
+      setTimeout(() => {
+        syncLearningRoadmapSection(entry.careerMatch, entry.role || entry.title);
+      }, 20);
+    }
     const cm = entry.careerMatch;
     const percent = entry.percent !== null ? entry.percent : 0;
     const isHalt = entry.type === "match-halt";
@@ -920,6 +1085,38 @@ document.addEventListener("DOMContentLoaded", () => {
             <a href="#saved-analyses-section" class="btn-subtle btn-cm-view-saved">
               My Saved Analyses (<span class="cm-saved-count-inline">0</span>)
             </a>
+          </div>
+        </div>
+
+        <!-- Circular Score Gauge Overview -->
+        <div class="match-score-overview-card">
+          <div class="circular-score-gauge">
+            <svg class="score-ring-svg" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="scoreGaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#6366F1" />
+                  <stop offset="100%" stop-color="#2DD4BF" />
+                </linearGradient>
+              </defs>
+              <circle class="score-ring-bg" cx="50" cy="50" r="40" stroke-width="8" />
+              <circle class="score-ring-fill" cx="50" cy="50" r="40" stroke-width="8"
+                stroke="url(#scoreGaugeGrad)"
+                stroke-dasharray="251.327"
+                stroke-dashoffset="${(251.327 * (1 - percent / 100)).toFixed(1)}" />
+            </svg>
+            <div class="score-ring-center">
+              <span class="score-ring-pct">${percent}%</span>
+              <span class="score-ring-label">MATCH</span>
+            </div>
+          </div>
+          <div class="score-summary-details">
+            <h3 class="score-level-title">${percent >= 65 ? 'Strong Opportunity Alignment' : percent >= 35 ? 'Moderate Alignment with Growth Potential' : 'Foundational Competencies Needed'}</h3>
+            <p class="score-level-desc">${escapeHtml((cm && cm.scoreBreakdown) || entry.description || 'Personalized skill alignment calculated using grounded resume evidence.')}</p>
+            <div class="score-stat-pills">
+              <span class="stat-pill pill-matched">✓ ${matchedItems.length} Matched</span>
+              ${partialItems.length > 0 ? `<span class="stat-pill pill-partial">⚡ ${partialItems.length} Partial (Foundations)</span>` : ''}
+              <span class="stat-pill pill-missing">✗ ${missingItems.length} Missing Gaps</span>
+            </div>
           </div>
         </div>
 
@@ -1272,6 +1469,9 @@ document.addEventListener("DOMContentLoaded", () => {
     bindRoadmapCheckboxes(stepDiv);
     bindCareerMatchFilters(stepDiv);
     bindCareerMatchActions(stepDiv, entry);
+        if (entry.careerMatch) {
+          syncLearningRoadmapSection(entry.careerMatch, entry.role || entry.title);
+        }
 
     if (isHalt) {
       const draftBtn = stepDiv.querySelector(".btn-draft-anyway");
