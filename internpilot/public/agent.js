@@ -268,43 +268,47 @@ async function runAgent(resumeText, postingText, log, options = {}) {
   }
 
   // ==========================================
-  // STEP C: MATCH SKILLS
+  // STEP C: MATCH SKILLS & CAREERMATCH AI
   // ==========================================
   const hasResume = !!(state.resumeText && state.resumeText.trim());
 
   if (startStep === "read" || startStep === "scam" || startStep === "match") {
     log({
       type: "step-start",
-      title: "Matching your skills...",
+      title: "CareerMatch AI: Evaluating skill alignment & pathways...",
       icon: "check-circle"
     });
 
     if (!hasResume) {
       log({
         type: "decision",
-        text: "No resume text provided. Paste your resume to see skill alignment."
+        text: "No resume text provided. Paste your resume to see skill alignment and learning roadmap."
       });
       log({
         type: "decision",
         text: "Decision: No resume provided, skipping email drafting."
       });
-      state.match = { percent: null, matched: [], missing: [], level: "none" };
+      state.match = { percent: null, matched: [], partial: [], missing: [], level: "none", careerMatch: null };
     } else {
       try {
-        const aiSkills = state.details?.requiredSkills || null;
+        const aiSkills = state.details || null;
         const matchResult = _matchSkills(state.resumeText, state.postingText, aiSkills);
         state.match = matchResult;
 
+        const cm = matchResult.careerMatch;
+
         if (matchResult.percent !== null && matchResult.percent < 30) {
-          // Match < 30%: STOP flow, show "Learn these first"
+          // Match < 30%: STOP flow, show "Learn these first" and personalized roadmap
           log({
             type: "match-halt",
-            title: `✓ Matching your skills: about ${matchResult.percent}% match (Very Low)`,
+            title: `✓ CareerMatch AI: about ${matchResult.percent}% match (Low Alignment)`,
             percent: matchResult.percent,
             level: matchResult.level,
             matched: matchResult.matched,
+            partial: matchResult.partial || [],
             missing: matchResult.missing,
-            decisionText: "Decision: match is very low, suggesting skills to learn first.",
+            careerMatch: cm,
+            decisionText: "Decision: match is very low, suggesting skills to learn first and personalized roadmap.",
             onDraftAnyway: () => {
               log({
                 type: "decision",
@@ -322,19 +326,22 @@ async function runAgent(resumeText, postingText, log, options = {}) {
           // No recognizable skills
           log({
             type: "match-neutral",
-            title: "✓ Matching your skills: Alignment estimate unavailable",
+            title: "✓ CareerMatch AI: Alignment estimate unavailable",
             note: matchResult.note || "No recognizable skills found in the job posting.",
+            careerMatch: cm,
             decisionText: "Decision: skill match could not be estimated, proceeding to email draft."
           });
         } else {
           // Good or acceptable match
           log({
             type: "match-success",
-            title: `✓ Matching your skills: about ${matchResult.percent}% match (${matchResult.level.toUpperCase()})`,
+            title: `✓ CareerMatch AI: about ${matchResult.percent}% match (${matchResult.level.toUpperCase()})`,
             percent: matchResult.percent,
             level: matchResult.level,
             matched: matchResult.matched,
+            partial: matchResult.partial || [],
             missing: matchResult.missing,
+            careerMatch: cm,
             decisionText: `Decision: skill match acceptable (about ${matchResult.percent}%), proceeding to email draft.`
           });
         }
@@ -342,7 +349,7 @@ async function runAgent(resumeText, postingText, log, options = {}) {
         console.error("Step C error:", err);
         log({
           type: "step-error",
-          text: "Skill matching encountered an error. Proceeding to draft."
+          text: "CareerMatch analysis encountered an error. Proceeding to draft."
         });
       }
     }

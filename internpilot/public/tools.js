@@ -279,56 +279,607 @@ function extractSkills(text) {
 }
 
 // ==========================================
-// 3. SKILL MATCHER
+// 3. CAREERMATCH AI KNOWLEDGE BASE & ENGINE
 // ==========================================
-function matchSkills(resumeText, postingText, postingSkills = null) {
-  const resumeSkills = extractSkills(resumeText);
 
-  let requiredSkills = [];
-  if (Array.isArray(postingSkills) && postingSkills.length > 0) {
-    const normalizedAI = [];
-    for (const s of postingSkills) {
-      if (typeof s === "string") {
-        const cleaned = s.trim().toLowerCase();
-        const mapped = ALIASES[cleaned] || cleaned;
-        if (mapped.length > 1) {
-          normalizedAI.push(mapped);
-        }
-      }
+const PARTIAL_MATCH_MAP = {
+  "typescript": {
+    foundation: ["javascript"],
+    note: "Strong JavaScript foundation directly accelerates learning TypeScript static types, interfaces, and generics."
+  },
+  "next.js": {
+    foundation: ["react", "javascript"],
+    note: "React component and JSX experience translates directly to Next.js server components and App Router."
+  },
+  "django": {
+    foundation: ["python"],
+    note: "Python programming proficiency enables rapid mastery of Django's batteries-included MVT web framework."
+  },
+  "flask": {
+    foundation: ["python"],
+    note: "Python foundation makes learning Flask microframework routing and request handling straightforward."
+  },
+  "fastapi": {
+    foundation: ["python"],
+    note: "Python type hints and async/await syntax provide the exact prerequisite for FastAPI development."
+  },
+  "react": {
+    foundation: ["javascript", "html", "css"],
+    note: "JavaScript DOM manipulation and modern ES6+ concepts form the core basis for React hooks and components."
+  },
+  "vue": {
+    foundation: ["javascript", "html"],
+    note: "JavaScript and HTML background allows immediate understanding of Vue's reactivity and templates."
+  },
+  "angular": {
+    foundation: ["typescript", "javascript"],
+    note: "JavaScript and OOP concepts align directly with Angular's TypeScript services and dependency injection."
+  },
+  "tailwind": {
+    foundation: ["css", "html"],
+    note: "CSS box-model, flexbox, and grid understanding make Tailwind utility classes fast to learn."
+  },
+  "bootstrap": {
+    foundation: ["css", "html"],
+    note: "CSS fundamentals make Bootstrap's responsive grid system and pre-styled components intuitive."
+  },
+  "postgresql": {
+    foundation: ["sql", "mysql"],
+    note: "Standard SQL querying knowledge transfers seamlessly to PostgreSQL relational modeling and indexing."
+  },
+  "mysql": {
+    foundation: ["sql"],
+    note: "Relational database querying and normalization skills apply directly to MySQL schema management."
+  },
+  "mongodb": {
+    foundation: ["javascript", "node.js"],
+    note: "Familiarity with JSON objects and JavaScript makes NoSQL BSON document querying straightforward."
+  },
+  "redis": {
+    foundation: ["sql", "node.js", "python", "mysql", "postgresql"],
+    note: "General backend data storage experience prepares you for Redis in-memory caching and key-value operations."
+  },
+  "pytorch": {
+    foundation: ["python", "machine learning"],
+    note: "Python fluency and linear algebra/ML principles form the exact foundation for PyTorch tensor pipelines."
+  },
+  "tensorflow": {
+    foundation: ["python", "machine learning"],
+    note: "Python ML model knowledge applies directly to TensorFlow and Keras deep learning training graphs."
+  },
+  "deep learning": {
+    foundation: ["machine learning", "python", "statistics"],
+    note: "Classical machine learning fundamentals prepare you for training multi-layer neural networks."
+  },
+  "docker": {
+    foundation: ["linux"],
+    note: "Linux terminal commands and process management concepts ease adopting Docker containers and Dockerfiles."
+  },
+  "kubernetes": {
+    foundation: ["docker", "linux", "cloud"],
+    note: "Docker containerization experience is the primary prerequisite for Kubernetes cluster orchestration."
+  },
+  "aws": {
+    foundation: ["cloud", "linux"],
+    note: "Core cloud computing concepts and Linux system skills transfer directly to AWS EC2, S3, and IAM."
+  },
+  "azure": {
+    foundation: ["cloud", "linux"],
+    note: "General cloud architecture knowledge applies directly to Azure compute and storage resources."
+  },
+  "gcp": {
+    foundation: ["cloud", "linux"],
+    note: "Cloud fundamentals provide the baseline for deploying applications to Google Cloud Platform."
+  },
+  "spring": {
+    foundation: ["java"],
+    note: "Java object-oriented programming fundamentals prepare you for Spring IoC and dependency injection."
+  },
+  "spring boot": {
+    foundation: ["java", "spring"],
+    note: "Java background simplifies configuring production-ready Spring Boot microservices."
+  },
+  "express": {
+    foundation: ["node.js", "javascript"],
+    note: "Node.js and asynchronous JavaScript allow you to build Express REST endpoints immediately."
+  },
+  "pandas": {
+    foundation: ["python", "data analysis", "excel"],
+    note: "Python programming and spreadsheet analysis concepts apply directly to Pandas DataFrame manipulation."
+  },
+  "numpy": {
+    foundation: ["python", "statistics"],
+    note: "Python syntax enables quick adoption of NumPy multidimensional array operations."
+  },
+  "statistics": {
+    foundation: ["data analysis", "excel", "python"],
+    note: "Data exploration and reporting experience provides strong intuition for statistical distributions and testing."
+  },
+  "flutter": {
+    foundation: ["javascript", "java", "c++"],
+    note: "Object-oriented and reactive programming experience accelerates learning Dart and Flutter widgets."
+  },
+  "android": {
+    foundation: ["java", "kotlin"],
+    note: "Java or Kotlin experience translates directly into Android Activity lifecycles and layout XML."
+  }
+};
+
+const SKILL_REASONS = {
+  "javascript": "Required to implement interactive client-side logic, handle asynchronous requests, and manipulate the DOM.",
+  "typescript": "Required to build type-safe, maintainable web applications and prevent runtime errors in production.",
+  "html": "Required to construct semantic, accessible markup for web interfaces and email templates.",
+  "css": "Required to style responsive, visual layouts with modern flexbox, CSS grid, and media queries.",
+  "react": "Required to develop modular component-based user interfaces and manage reactive application state.",
+  "next.js": "Required for server-rendered React applications, SEO-friendly web architecture, and fullstack API routes.",
+  "node.js": "Required to build scalable asynchronous backend services and handle server-side runtime operations.",
+  "express": "Required to design RESTful HTTP APIs, handle middleware authentication, and process server requests.",
+  "python": "Required for backend scripting, data pipeline processing, and algorithmic problem-solving.",
+  "sql": "Required to write relational database queries, join datasets, and manage persistent relational data.",
+  "postgresql": "Required to manage relational schemas, complex transactions, and indexed production databases.",
+  "mysql": "Required to manage relational tables, perform ACID transactions, and optimize database queries.",
+  "mongodb": "Required for flexible NoSQL document storage, schema-less prototyping, and aggregation pipelines.",
+  "git": "Required for team version control, feature branching, pull request workflows, and collaborative codebase management.",
+  "github": "Required for remote repository collaboration, issue tracking, and CI/CD automation pipelines.",
+  "docker": "Required to containerize software environments, ensuring reproducible builds across development and production.",
+  "linux": "Required for server management, shell scripting, process monitoring, and production deployment environments.",
+  "cloud": "Required to understand distributed infrastructure, compute instances, object storage, and remote deployments.",
+  "aws": "Required to provision cloud infrastructure such as EC2 compute, S3 static assets, and IAM role security.",
+  "machine learning": "Required to develop predictive models, train classification algorithms, and evaluate statistical metrics.",
+  "deep learning": "Required to build convolutional or transformer neural networks for complex computer vision or NLP tasks.",
+  "pytorch": "Required to design dynamic computational graphs, train neural models, and fine-tune machine learning architectures.",
+  "tensorflow": "Required for training production-grade deep learning networks and deploying models to client/server targets.",
+  "data analysis": "Required to extract actionable business insights from raw data, clean datasets, and visualize metrics.",
+  "pandas": "Required to clean, transform, aggregate, and inspect tabular datasets with high efficiency in Python.",
+  "numpy": "Required for high-performance vectorized mathematical operations and multi-dimensional matrix linear algebra.",
+  "statistics": "Required to validate experimental hypotheses, perform A/B testing, and interpret distribution metrics.",
+  "figma": "Required to design user interface wireframes, prototype user journeys, and collaborate with product teams.",
+  "ui/ux": "Required to deliver user-centered design, conduct usability research, and ensure accessible navigation.",
+  "communication": "Required to collaborate across engineering teams, document technical decisions, and present project milestones.",
+  "c++": "Required for memory-efficient systems programming, low-latency performance, and algorithmic execution.",
+  "java": "Required for enterprise backend architectures, object-oriented software design, and scalable services."
+};
+
+const LEARNING_RESOURCES = {
+  "typescript": {
+    level: "Intermediate",
+    hours: "12–16 hours (1–2 weeks)",
+    topics: ["Basic Types & Type Inference", "Interfaces vs Type Aliases", "Generics & Utility Types", "Configuring tsconfig & Node/React integration"],
+    practicalActivities: [
+      "Convert a vanilla JavaScript function library into strictly-typed TypeScript with zero 'any' types.",
+      "Build a typed React component that accepts generic props with strict event handlers.",
+      "Write a typed REST API response handler that safely validates incoming JSON schemas."
+    ]
+  },
+  "react": {
+    level: "Intermediate",
+    hours: "18–24 hours (2–3 weeks)",
+    topics: ["JSX & Virtual DOM fundamentals", "useState, useEffect & custom hooks", "Component Composition & Props Drilling", "Consuming REST APIs & State Management"],
+    practicalActivities: [
+      "Build a responsive Todo & Filter app using React state and localStorage persistence.",
+      "Build an interactive Job Board that fetches postings from a mock API with search and tag filters.",
+      "Implement a light/dark theme switcher using React Context API."
+    ]
+  },
+  "next.js": {
+    level: "Intermediate",
+    hours: "14–18 hours (2 weeks)",
+    topics: ["App Router & File-based Routing", "Server Components vs Client Components", "Data Fetching & Caching Strategies", "Fullstack API Route Handlers"],
+    practicalActivities: [
+      "Build a multi-page dynamic blog utilizing Next.js Server Components and dynamic route parameters.",
+      "Create a fullstack feedback collector with a Next.js API route that writes to a local SQLite database.",
+      "Implement an optimized landing page with next/image and server-side metadata generation."
+    ]
+  },
+  "python": {
+    level: "Beginner",
+    hours: "15–20 hours (2 weeks)",
+    topics: ["Variables, Data Types & Control Flow", "Functions, Modules & File I/O", "Object-Oriented Programming (Classes & Inheritance)", "Virtual Environments & Package Management (pip)"],
+    practicalActivities: [
+      "Write a command-line utility that reads a CSV file and calculates summary statistics.",
+      "Build a web scraper using requests and BeautifulSoup to extract headlines from a tech news site.",
+      "Create a modular CLI tool with unit tests using Python's built-in unittest module."
+    ]
+  },
+  "sql": {
+    level: "Beginner",
+    hours: "10–14 hours (1–2 weeks)",
+    topics: ["SELECT, WHERE, ORDER BY & LIMIT", "INNER, LEFT & FULL OUTER JOINs", "Aggregate Functions (COUNT, SUM, AVG, GROUP BY, HAVING)", "Table Creation, Foreign Keys & Constraints"],
+    practicalActivities: [
+      "Design an Entity-Relationship schema for an Internship Tracker and write CREATE TABLE statements.",
+      "Write 10 SQL queries calculating average stipend, highest frequency skills, and nearest deadlines.",
+      "Practice multi-table joins on SQLZoo or LeetCode Database practice sets."
+    ]
+  },
+  "postgresql": {
+    level: "Intermediate",
+    hours: "12–16 hours (1–2 weeks)",
+    topics: ["PostgreSQL Schema Design & Data Types", "Indexing Strategies (B-tree, GIN)", "Transactions & ACID Compliance", "Connecting via Node.js (pg / Prisma / Drizzle)"],
+    practicalActivities: [
+      "Set up a local or Supabase PostgreSQL database and create a normalized 3-table schema.",
+      "Write parameterized queries in Node.js preventing SQL injection vulnerabilities.",
+      "Analyze query performance using EXPLAIN ANALYZE on a 10,000-row test dataset."
+    ]
+  },
+  "docker": {
+    level: "Intermediate",
+    hours: "10–14 hours (1–2 weeks)",
+    topics: ["Containers vs Virtual Machines", "Writing Multi-stage Dockerfiles", "Image Layer Caching & Optimization", "Docker Compose for Multi-container Apps"],
+    practicalActivities: [
+      "Write a Dockerfile for a Node.js Express application minimizing image size using Alpine Linux.",
+      "Create a docker-compose.yml file orchestrating an Express backend and a PostgreSQL database.",
+      "Build, tag, and test running your container locally with volume mounts for live reload."
+    ]
+  },
+  "pytorch": {
+    level: "Intermediate",
+    hours: "20–28 hours (3 weeks)",
+    topics: ["Tensors, Dimensions & GPU Acceleration", "Autograd & Automatic Differentiation", "Building Custom nn.Module Architectures", "DataLoader, Training Loops & Loss Functions"],
+    practicalActivities: [
+      "Train a feedforward neural network on the MNIST digits dataset achieving >97% validation accuracy.",
+      "Implement a custom PyTorch Dataset class loading and normalizing real tabular or image data.",
+      "Save and load model state_dict weights and build an inference script for single predictions."
+    ]
+  },
+  "tensorflow": {
+    level: "Intermediate",
+    hours: "20–26 hours (3 weeks)",
+    topics: ["Tensors & Keras Sequential/Functional APIs", "Convolutional Neural Networks (CNNs)", "Loss Functions, Optimizers & Callbacks", "Model Evaluation & Exporting SavedModels"],
+    practicalActivities: [
+      "Build a binary image classification model with Keras with early stopping callbacks.",
+      "Apply data augmentation techniques to reduce model overfitting on small training samples.",
+      "Evaluate precision, recall, and ROC-AUC on a held-out test split."
+    ]
+  },
+  "machine learning": {
+    level: "Beginner",
+    hours: "18–24 hours (2–3 weeks)",
+    topics: ["Supervised vs Unsupervised Learning", "Feature Scaling & Train/Test Splits", "Regression, Decision Trees & Random Forests", "Cross-Validation & Evaluation Metrics (F1, MSE)"],
+    practicalActivities: [
+      "Train a Scikit-Learn Random Forest regressor to predict house prices or salary ranges.",
+      "Preprocess a messy tabular dataset by imputing missing values and one-hot encoding categories.",
+      "Plot confusion matrices and precision-recall curves comparing two baseline algorithms."
+    ]
+  },
+  "data analysis": {
+    level: "Beginner",
+    hours: "12–16 hours (1–2 weeks)",
+    topics: ["Exploratory Data Analysis (EDA)", "Cleaning Missing & Duplicate Values", "Statistical Distributions & Outlier Detection", "Visualizing Trends with Matplotlib / Seaborn"],
+    practicalActivities: [
+      "Perform an EDA notebook on an open Kaggle dataset uncovering at least 5 meaningful patterns.",
+      "Create clear bar charts, scatter plots, and box plots with labelled axes and legends.",
+      "Write a 1-page executive summary translating statistical findings into actionable recommendations."
+    ]
+  },
+  "cloud": {
+    level: "Beginner",
+    hours: "10–14 hours (1–2 weeks)",
+    topics: ["Cloud Service Models (IaaS, PaaS, Serverless)", "Virtual Private Clouds & Networking basics", "Object Storage & CDN Edge Distribution", "Authentication, API Keys & Secret Management"],
+    practicalActivities: [
+      "Deploy a static web application to cloud storage with automated global edge caching.",
+      "Configure cloud environment variables securely without committing secrets to source control.",
+      "Set up a healthcheck monitor alerting on server downtime."
+    ]
+  },
+  "aws": {
+    level: "Intermediate",
+    hours: "14–18 hours (2 weeks)",
+    topics: ["AWS EC2 Instances & Security Groups", "S3 Buckets & Bucket Policies", "AWS Lambda Serverless Functions", "IAM Users, Roles & Least Privilege"],
+    practicalActivities: [
+      "Launch a free-tier EC2 Ubuntu instance and configure an Nginx reverse proxy.",
+      "Host static web assets in an Amazon S3 bucket with restricted public read permissions.",
+      "Deploy a serverless AWS Lambda microservice triggered by an API Gateway endpoint."
+    ]
+  },
+  "git": {
+    level: "Beginner",
+    hours: "6–8 hours (1 week)",
+    topics: ["init, clone, add, commit, push", "Branching, Merging & Fast-forward vs 3-way", "Resolving Merge Conflicts", "Pull Requests & Code Review etiquette"],
+    practicalActivities: [
+      "Create a GitHub repository with a clean README, .gitignore, and semantic commit history.",
+      "Simulate and resolve a merge conflict across two feature branches.",
+      "Open a pull request with an informative title, context summary, and test verification checklist."
+    ]
+  }
+};
+
+const PROJECT_BLUEPRINTS = [
+  {
+    targetDomain: ["frontend", "web", "react", "javascript", "typescript"],
+    title: "Interactive Student Internship & Milestone Portal",
+    description: "A responsive single-page application built with modern component architecture, real-time search filtering, and localized state persistence.",
+    skillsCovered: ["React", "TypeScript", "HTML", "CSS", "Git"],
+    difficulty: "Beginner / Intermediate",
+    deliverable: "Deployed GitHub repository with modular component structure, zero TypeScript warnings, and responsive mobile layouts.",
+    relevance: "Directly demonstrates the frontend engineering skills required to build customer-facing web dashboards."
+  },
+  {
+    targetDomain: ["backend", "node.js", "express", "sql", "postgresql", "mysql"],
+    title: "RESTful Application Tracking & Notification API",
+    description: "A secure backend web service featuring relational database schema migrations, JWT authentication middleware, and input sanitization.",
+    skillsCovered: ["Node.js", "Express", "PostgreSQL", "SQL", "Git"],
+    difficulty: "Intermediate",
+    deliverable: "Documented REST API with OpenAPI/Swagger specification, parameterized SQL queries, and automated integration test coverage.",
+    relevance: "Proves competency in building resilient server-side services, data modeling, and handling production HTTP workflows."
+  },
+  {
+    targetDomain: ["machine learning", "pytorch", "tensorflow", "data analysis", "python", "statistics"],
+    title: "Predictive Internship Salary & Competency Analytics Pipeline",
+    description: "An end-to-end data pipeline that ingests job posting datasets, performs exploratory data analysis, and trains predictive models on key skills.",
+    skillsCovered: ["Python", "Pandas", "Scikit-Learn", "Machine Learning", "Statistics"],
+    difficulty: "Intermediate",
+    deliverable: "Jupyter notebook with documented EDA, feature engineering, model metric comparisons (RMSE/F1), and exported inference script.",
+    relevance: "Proves hands-on capability to handle messy real-world datasets and deliver verifiable data science outcomes."
+  },
+  {
+    targetDomain: ["cloud", "docker", "aws", "linux"],
+    title: "Containerized Microservice with Automated Cloud Deployment",
+    description: "A containerized fullstack service packaged with Docker Compose, configured with multi-stage builds, and deployed to cloud infrastructure.",
+    skillsCovered: ["Docker", "Linux", "Cloud", "AWS", "Git"],
+    difficulty: "Intermediate",
+    deliverable: "GitHub repository featuring multi-stage Dockerfiles, docker-compose.yml configuration, and a deployed live cloud URL.",
+    relevance: "Demonstrates practical modern DevOps discipline, container isolation, and cloud architecture awareness."
+  }
+];
+
+// ==========================================
+// 4. CAREERMATCH AI CORE EVALUATION FUNCTION
+// ==========================================
+function analyzeCareerMatch(resumeText, postingText, aiDetails = null) {
+  const resumeSkills = extractSkills(resumeText || "");
+  const normalizedResumeSkills = resumeSkills.map(s => s.toLowerCase());
+
+  // Extract job skills (from AI structured details if provided, plus regex extracted fallback)
+  let rawRequired = [];
+  let rawPreferred = [];
+
+  if (aiDetails && typeof aiDetails === "object") {
+    if (Array.isArray(aiDetails.requiredSkills)) {
+      rawRequired.push(...aiDetails.requiredSkills);
     }
-    const extracted = extractSkills(postingText);
-    requiredSkills = Array.from(new Set([...normalizedAI, ...extracted]));
-  } else {
-    requiredSkills = extractSkills(postingText);
+    if (Array.isArray(aiDetails.preferredSkills)) {
+      rawPreferred.push(...aiDetails.preferredSkills);
+    }
   }
 
-  if (requiredSkills.length === 0) {
+  // Fallback to regex extraction from job posting text
+  const postingRegexSkills = extractSkills(postingText || "");
+
+  // If no structured separation was passed, treat posting regex skills as required
+  if (rawRequired.length === 0 && rawPreferred.length === 0) {
+    rawRequired = postingRegexSkills;
+  } else {
+    // Add any regex skills not yet categorized to rawRequired
+    for (const rs of postingRegexSkills) {
+      const lower = rs.toLowerCase();
+      const inReq = rawRequired.some(s => (typeof s === "string" ? s : s.name).toLowerCase() === lower);
+      const inPref = rawPreferred.some(s => (typeof s === "string" ? s : s.name).toLowerCase() === lower);
+      if (!inReq && !inPref) {
+        rawRequired.push(rs);
+      }
+    }
+  }
+
+  // Normalize skill items into uniform objects
+  function normalizeSkillList(list, defaultImportance) {
+    const result = [];
+    const seen = new Set();
+    for (const item of list) {
+      let name = "";
+      let importance = defaultImportance;
+      let reason = null;
+
+      if (typeof item === "string") {
+        name = item.trim().toLowerCase();
+      } else if (item && typeof item === "object") {
+        name = (item.name || item.skill || "").trim().toLowerCase();
+        importance = item.importance || defaultImportance;
+        reason = item.reason || null;
+      }
+
+      const canonical = ALIASES[name] || name;
+      if (canonical.length > 1 && !seen.has(canonical)) {
+        seen.add(canonical);
+        const resolvedReason = reason || (aiDetails?.skillReasons && aiDetails.skillReasons[canonical]) || SKILL_REASONS[canonical] || `Required to perform essential ${canonical.toUpperCase()} duties for this role.`;
+        result.push({
+          name: canonical,
+          importance: importance === "preferred" ? "preferred" : "required",
+          reason: resolvedReason
+        });
+      }
+    }
+    return result;
+  }
+
+  const requiredList = normalizeSkillList(rawRequired, "required");
+  const preferredList = normalizeSkillList(rawPreferred, "preferred");
+  const allJobSkills = [...requiredList, ...preferredList];
+
+  if (allJobSkills.length === 0) {
     return {
       percent: null,
-      matched: [],
-      missing: [],
+      score: null,
       level: "very low",
+      matched: [],
+      partial: [],
+      missing: [],
+      requiredSkills: [],
+      preferredSkills: [],
+      roadmap: [],
+      projects: [],
+      scoreBreakdown: "No recognizable skills identified in the job posting to evaluate.",
       note: "No recognizable skills found in the job posting."
     };
   }
 
-  const matched = requiredSkills.filter(skill => resumeSkills.includes(skill));
-  const missing = requiredSkills.filter(skill => !resumeSkills.includes(skill));
-  const percent = Math.round((matched.length / requiredSkills.length) * 100);
+  const matched = [];
+  const partial = [];
+  const missing = [];
+
+  let earnedPoints = 0;
+  let totalPossiblePoints = 0;
+
+  for (const skillObj of allJobSkills) {
+    const skillName = skillObj.name;
+    const isRequired = skillObj.importance === "required";
+    const weight = isRequired ? 2.0 : 1.0;
+    totalPossiblePoints += weight;
+
+    // Check 1: Direct exact match
+    if (normalizedResumeSkills.includes(skillName)) {
+      earnedPoints += 1.0 * weight;
+      matched.push({
+        ...skillObj,
+        status: "matched",
+        credit: 1.0,
+        weight
+      });
+      continue;
+    }
+
+    // Check 2: Partial match via foundation skills
+    const partialRule = PARTIAL_MATCH_MAP[skillName];
+    let foundFoundation = null;
+
+    if (partialRule && Array.isArray(partialRule.foundation)) {
+      foundFoundation = partialRule.foundation.find(f => normalizedResumeSkills.includes(f.toLowerCase()));
+    }
+
+    if (foundFoundation) {
+      earnedPoints += 0.5 * weight;
+      partial.push({
+        ...skillObj,
+        status: "partial",
+        credit: 0.5,
+        weight,
+        foundationSkill: foundFoundation,
+        foundationEvidence: partialRule.note
+      });
+    } else {
+      // Check 3: Missing competency
+      missing.push({
+        ...skillObj,
+        status: "missing",
+        credit: 0.0,
+        weight
+      });
+    }
+  }
+
+  const percent = totalPossiblePoints > 0 ? Math.round((earnedPoints / totalPossiblePoints) * 100) : 0;
 
   let level = "very low";
-  if (percent >= 60) {
+  if (percent >= 65) {
     level = "good";
-  } else if (percent >= 30) {
+  } else if (percent >= 35) {
     level = "low";
   }
 
+  // Construct Personalized Learning Roadmap (focusing on missing and partial skills)
+  const skillsForRoadmap = [...missing, ...partial];
+  // Sort so required skills come first, then partial skills with existing foundations
+  skillsForRoadmap.sort((a, b) => {
+    if (a.importance === "required" && b.importance !== "required") return -1;
+    if (b.importance === "required" && a.importance !== "required") return 1;
+    if (a.status === "partial" && b.status === "missing") return -1;
+    if (b.status === "partial" && a.status === "missing") return 1;
+    return 0;
+  });
+
+  const roadmap = skillsForRoadmap.map(s => {
+    const res = LEARNING_RESOURCES[s.name] || {
+      level: s.status === "partial" ? "Intermediate" : "Beginner",
+      hours: "10–14 hours (1–2 weeks)",
+      topics: [`Core ${s.name} concepts & syntax`, `Project structure & practical configuration`, `Debugging & best practices`],
+      practicalActivities: [
+        `Complete a guided hands-on tutorial on ${s.name} fundamentals.`,
+        `Build a focused micro-project implementing ${s.name} into your portfolio.`,
+        `Push your ${s.name} project to GitHub with descriptive documentation.`
+      ]
+    };
+
+    let foundationNote = null;
+    if (s.status === "partial" && s.foundationSkill) {
+      foundationNote = `Leverage your ${s.foundationSkill.toUpperCase()} background: you already understand the foundational concepts, so you can jump straight into advanced syntax and patterns.`;
+    }
+
+    return {
+      skill: s.name,
+      importance: s.importance === "required" ? "High (Required)" : "Medium (Preferred)",
+      level: s.status === "partial" ? "Intermediate (Foundation Known)" : res.level,
+      whyItMatters: s.reason,
+      foundationNote,
+      estimatedHours: res.hours,
+      topics: res.topics,
+      practicalActivities: res.practicalActivities
+    };
+  });
+
+  // Select 2 to 3 practical, relevant student projects
+  const roleLower = (aiDetails?.role || postingText || "").toLowerCase();
+  const projects = [];
+
+  for (const bp of PROJECT_BLUEPRINTS) {
+    const isDomainMatch = bp.targetDomain.some(d =>
+      roleLower.includes(d) ||
+      allJobSkills.some(js => js.name.toLowerCase() === d)
+    );
+    if (isDomainMatch) {
+      projects.push(bp);
+    }
+    if (projects.length >= 3) break;
+  }
+
+  // Ensure at least 2 recommended projects
+  if (projects.length < 2) {
+    for (const bp of PROJECT_BLUEPRINTS) {
+      if (!projects.includes(bp)) {
+        projects.push(bp);
+      }
+      if (projects.length >= 2) break;
+    }
+  }
+
+  const scoreBreakdown = `Explainable Match: ${matched.length} matched (1.0x), ${partial.length} partial (0.5x), ${missing.length} missing (0.0x) out of ${allJobSkills.length} competencies. Required skills weighted at 2.0x, preferred at 1.0x. Earned ${earnedPoints.toFixed(1)} / ${totalPossiblePoints.toFixed(1)} points.`;
+
   return {
     percent,
-    matched,
-    missing,
+    score: percent,
     level,
+    matched,
+    partial,
+    missing,
+    requiredSkills: requiredList,
+    preferredSkills: preferredList,
+    roadmap,
+    projects,
+    scoreBreakdown,
     note: ""
+  };
+}
+
+// ==========================================
+// 5. BACKWARD-COMPATIBLE SKILL MATCHER WRAPPER
+// ==========================================
+function matchSkills(resumeText, postingText, postingSkills = null) {
+  let aiDetails = null;
+  if (postingSkills && typeof postingSkills === "object" && !Array.isArray(postingSkills)) {
+    aiDetails = postingSkills;
+  } else if (Array.isArray(postingSkills)) {
+    aiDetails = { requiredSkills: postingSkills };
+  }
+
+  const cm = analyzeCareerMatch(resumeText, postingText, aiDetails);
+
+  return {
+    percent: cm.percent,
+    score: cm.percent,
+    level: cm.level,
+    matched: cm.matched.map(s => s.name),
+    partial: cm.partial.map(s => s.name),
+    missing: cm.missing.map(s => s.name),
+    note: cm.note,
+    careerMatch: cm
   };
 }
 
@@ -558,9 +1109,14 @@ if (typeof module !== "undefined" && module.exports) {
     ACTIVITY_RULES,
     SKILLS,
     ALIASES,
+    PARTIAL_MATCH_MAP,
+    SKILL_REASONS,
+    LEARNING_RESOURCES,
+    PROJECT_BLUEPRINTS,
     scamCheck,
     extractSkills,
     matchSkills,
+    analyzeCareerMatch,
     computeActivity,
     saveApplication,
     updateApplication,

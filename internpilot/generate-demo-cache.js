@@ -77,7 +77,16 @@ const CANONICAL_DEMO_DATA = {
     details: {
       role: "Junior Web Developer Intern",
       company: "Apex Cloud Technologies",
-      requiredSkills: ["HTML", "CSS", "JavaScript", "Git", "Communication"],
+      requiredSkills: ["HTML", "CSS", "JavaScript", "Git"],
+      preferredSkills: ["Cloud", "Communication"],
+      skillReasons: {
+        "html": "Required to build semantic, accessible web components.",
+        "css": "Required to develop mobile-responsive layouts and styling.",
+        "javascript": "Required to program interactive client-side application logic.",
+        "git": "Required for collaborative version control on GitHub.",
+        "cloud": "Preferred for deploying static applications to AWS or Vercel.",
+        "communication": "Required to collaborate effectively with engineering leads."
+      },
       deadline: "November 25, 2026",
       contactEmail: "careers@apexcloudtech.com",
       stipend: "Rs 15,000 per month",
@@ -93,6 +102,15 @@ const CANONICAL_DEMO_DATA = {
       role: "Frontend Engineering Intern",
       company: "Vanguard Data Labs",
       requiredSkills: ["JavaScript", "React", "HTML", "CSS", "Git"],
+      preferredSkills: ["TypeScript"],
+      skillReasons: {
+        "javascript": "Core language required for frontend architecture.",
+        "react": "Required to develop modular component-based user interfaces.",
+        "html": "Required to structure accessible web applications.",
+        "css": "Required for custom responsive UI styling.",
+        "git": "Required for branch management and pull requests.",
+        "typescript": "Preferred for type-safe frontend application scaling."
+      },
       deadline: "December 10, 2026",
       contactEmail: "interns@vanguarddatalabs.io",
       stipend: "Rs 20,000 per month",
@@ -108,6 +126,7 @@ const CANONICAL_DEMO_DATA = {
       role: "Junior Office Assistant & Web Trainee",
       company: "QuickCareer Global Services",
       requiredSkills: [],
+      preferredSkills: [],
       deadline: null,
       contactEmail: null,
       stipend: "Up to Rs 35,000",
@@ -123,6 +142,7 @@ const CANONICAL_DEMO_DATA = {
       role: "Trainee Intern",
       company: "A reputed MNC",
       requiredSkills: [],
+      preferredSkills: [],
       deadline: null,
       contactEmail: "hr.recruitment.team.india@gmail.com",
       stipend: null,
@@ -138,6 +158,12 @@ const CANONICAL_DEMO_DATA = {
       role: "Python and Web Development Intern",
       company: "Horizon Next Systems",
       requiredSkills: ["Python", "JavaScript", "Git"],
+      preferredSkills: ["SQL"],
+      skillReasons: {
+        "python": "Required for backend script automation and data handling.",
+        "javascript": "Required for web UI features.",
+        "git": "Required for code repository management."
+      },
       deadline: "December 5, 2026",
       contactEmail: "contact@horizonnext.com",
       stipend: "Rs 18,000 monthly stipend",
@@ -153,6 +179,12 @@ const CANONICAL_DEMO_DATA = {
       role: "Web Design Intern",
       company: "Starlight Creative Studio",
       requiredSkills: ["HTML", "CSS", "Figma"],
+      preferredSkills: ["UI/UX"],
+      skillReasons: {
+        "html": "Required to translate design mockups into web pages.",
+        "css": "Required for pixel-perfect design styling.",
+        "figma": "Required for UI prototyping and design system collaboration."
+      },
       deadline: "November 20, 2026",
       contactEmail: "starlight.creative.team@gmail.com",
       stipend: "Rs 12,000 monthly stipend",
@@ -168,6 +200,14 @@ const CANONICAL_DEMO_DATA = {
       role: "Associate Machine Learning Intern",
       company: "NeuroData Technologies",
       requiredSkills: ["PyTorch", "TensorFlow", "Statistics", "Python", "SQL"],
+      preferredSkills: ["Machine Learning", "Pandas"],
+      skillReasons: {
+        "pytorch": "Required to implement deep learning model architectures.",
+        "tensorflow": "Required to maintain legacy ML production pipelines.",
+        "statistics": "Required for hypothesis testing and validation metrics.",
+        "python": "Required for data loading and model training scripts.",
+        "sql": "Required to extract training datasets from relational warehouses."
+      },
       deadline: "November 30, 2026",
       contactEmail: "ml-interns@neurodatatech.ai",
       stipend: "Rs 25,000 per month",

@@ -1171,6 +1171,440 @@ mark.evidence-mark {
   color: var(--danger-text);
 }
 
+/* ============================================================
+   CAREERMATCH AI SUITE (Problem Statement #16)
+   - Visual Gap Breakdown Bar
+   - Competency Matrix (Matched, Partial, Missing)
+   - Personalized Learning Roadmaps with Checklists
+   - Recommended Student Portfolio Projects
+   ============================================================ */
+
+.careermatch-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  background: var(--surface-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-top: 0.35rem;
+}
+
+.careermatch-halt-state {
+  border-color: var(--danger-border);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+/* 1. Skill Gap Summary & Segmented Progress Bar */
+.careermatch-gap-summary {
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.gap-bar-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gap-bar-title {
+  font-family: "Sora", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.gap-bar-score {
+  font-family: "Sora", sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.careermatch-gap-bar {
+  display: flex;
+  height: 10px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+}
+
+.gap-seg-matched {
+  background: var(--ok);
+  transition: width 0.6s ease;
+}
+
+.gap-seg-partial {
+  background: #38bdf8;
+  transition: width 0.6s ease;
+}
+
+.gap-seg-missing {
+  background: var(--danger);
+  transition: width 0.6s ease;
+}
+
+.gap-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.775rem;
+  color: var(--text-muted);
+}
+
+.gap-leg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.leg-dot-matched { background: var(--ok); }
+.leg-dot-partial { background: #38bdf8; }
+.leg-dot-missing { background: var(--danger); }
+
+.gap-formula-note {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  line-height: 1.4;
+  border-top: 1px solid var(--line);
+  padding-top: 0.45rem;
+}
+
+/* 2. Competency Details Matrix */
+.careermatch-section-title {
+  font-family: "Sora", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.competencies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem;
+}
+
+.competency-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: border-color 0.15s ease;
+}
+
+.competency-card.status-matched {
+  border-left: 3px solid var(--ok);
+}
+
+.competency-card.status-partial {
+  border-left: 3px solid #38bdf8;
+  background: rgba(56, 189, 248, 0.05);
+}
+
+.competency-card.status-missing {
+  border-left: 3px solid var(--danger);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.comp-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.comp-name {
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--text-heading);
+  text-transform: capitalize;
+}
+
+.comp-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-full);
+}
+
+.badge-matched { background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); }
+.badge-partial { background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); }
+.badge-missing { background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+
+.comp-importance {
+  margin-left: auto;
+  font-size: 0.675rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.importance-req {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+}
+
+.importance-pref {
+  background: transparent;
+  color: var(--text-faint);
+  border: 1px dashed var(--line);
+}
+
+.comp-foundation {
+  font-size: 0.775rem;
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.08);
+  padding: 0.4rem 0.55rem;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.comp-reason {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* 3. Personalized Learning Roadmap */
+.roadmap-heading-wrap {
+  margin-bottom: 0.75rem;
+}
+
+.roadmap-subtitle {
+  font-size: 0.775rem;
+  color: var(--text-faint);
+}
+
+.roadmap-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.roadmap-step-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.roadmap-step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.roadmap-step-left {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.roadmap-step-num {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-bg-subtle);
+  border: 1px solid var(--accent-border);
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-full);
+}
+
+.roadmap-step-title {
+  font-family: "Sora", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  text-transform: capitalize;
+}
+
+.roadmap-step-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.roadmap-hours {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.roadmap-foundation-box {
+  font-size: 0.775rem;
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.08);
+  border-left: 3px solid #38bdf8;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-xs);
+  line-height: 1.45;
+}
+
+.roadmap-why {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.roadmap-topics-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.roadmap-topics-label {
+  font-size: 0.725rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.roadmap-topics-list {
+  padding-left: 1.25rem;
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.25rem;
+}
+
+.roadmap-activities-box {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.roadmap-activities-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.725rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.roadmap-activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.roadmap-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.roadmap-act-chk {
+  margin-top: 0.2rem;
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.roadmap-activity-item.activity-completed .act-text {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+
+/* 4. Recommended Student Portfolio Projects */
+.projects-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.85rem;
+}
+
+.project-rec-card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.project-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.project-title {
+  font-family: "Sora", sans-serif;
+  font-size: 0.925rem;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1.35;
+}
+
+.project-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.project-skills-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.project-skills-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.project-deliverable, .project-relevance {
+  font-size: 0.775rem;
+  line-height: 1.4;
+  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--line);
+}
+
 /* Badges */
 .badge {
   display: inline-flex;

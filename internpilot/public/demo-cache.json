@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T10:20:35.771Z",
+  "generatedAt": "2026-10-31T06:14:13.366Z",
   "model": "gemini-1.5-flash",
   "sampleResumeText": "ROHAN SHARMA\nEmail: rohan.sharma.student@example.com | Phone: +91 98765 01234\nLocation: New Delhi, India | GitHub: github.com/rohan-sharma-dev\n\nOBJECTIVE\nMotivated first-year Computer Science undergraduate eager to apply foundational programming and web development skills in an internship role.\n\nEDUCATION\nGreen Valley Institute of Technology\nBachelor of Technology in Computer Science and Engineering (1st Year)\nExpected Graduation: 2028 | Current CGPA: 8.6 / 10\n\nTECHNICAL SKILLS\n- Languages: Python, JavaScript, HTML, CSS\n- Version Control: Git, GitHub\n- Soft Skills: Communication, Problem Solving, Team Collaboration\n\nPROJECTS\nStudent Study Tracker (Web App)\n- Developed a lightweight, responsive task and revision tracker using HTML, CSS, and vanilla JavaScript.\n- Implemented localStorage to persist student daily tasks and subject schedules across browser sessions.\n- Maintained code versioning and commit history on GitHub using Git.\n\nADDITIONAL ACTIVITIES\n- Active member of the College Open Source Coding Club.\n- Completed 30 Days of Python coding challenge.",
   "postings": {
@@ -14,9 +14,20 @@
           "HTML",
           "CSS",
           "JavaScript",
-          "Git",
+          "Git"
+        ],
+        "preferredSkills": [
+          "Cloud",
           "Communication"
         ],
+        "skillReasons": {
+          "html": "Required to build semantic, accessible web components.",
+          "css": "Required to develop mobile-responsive layouts and styling.",
+          "javascript": "Required to program interactive client-side application logic.",
+          "git": "Required for collaborative version control on GitHub.",
+          "cloud": "Preferred for deploying static applications to AWS or Vercel.",
+          "communication": "Required to collaborate effectively with engineering leads."
+        },
         "deadline": "November 25, 2026",
         "contactEmail": "careers@apexcloudtech.com",
         "stipend": "Rs 15,000 per month",
@@ -41,6 +52,17 @@
           "CSS",
           "Git"
         ],
+        "preferredSkills": [
+          "TypeScript"
+        ],
+        "skillReasons": {
+          "javascript": "Core language required for frontend architecture.",
+          "react": "Required to develop modular component-based user interfaces.",
+          "html": "Required to structure accessible web applications.",
+          "css": "Required for custom responsive UI styling.",
+          "git": "Required for branch management and pull requests.",
+          "typescript": "Preferred for type-safe frontend application scaling."
+        },
         "deadline": "December 10, 2026",
         "contactEmail": "interns@vanguarddatalabs.io",
         "stipend": "Rs 20,000 per month",
@@ -59,6 +81,7 @@
         "role": "Junior Office Assistant & Web Trainee",
         "company": "QuickCareer Global Services",
         "requiredSkills": [],
+        "preferredSkills": [],
         "deadline": null,
         "contactEmail": null,
         "stipend": "Up to Rs 35,000",
@@ -77,6 +100,7 @@
         "role": "Trainee Intern",
         "company": "A reputed MNC",
         "requiredSkills": [],
+        "preferredSkills": [],
         "deadline": null,
         "contactEmail": "hr.recruitment.team.india@gmail.com",
         "stipend": null,
@@ -99,6 +123,14 @@
           "JavaScript",
           "Git"
         ],
+        "preferredSkills": [
+          "SQL"
+        ],
+        "skillReasons": {
+          "python": "Required for backend script automation and data handling.",
+          "javascript": "Required for web UI features.",
+          "git": "Required for code repository management."
+        },
         "deadline": "December 5, 2026",
         "contactEmail": "contact@horizonnext.com",
         "stipend": "Rs 18,000 monthly stipend",
@@ -121,6 +153,14 @@
           "CSS",
           "Figma"
         ],
+        "preferredSkills": [
+          "UI/UX"
+        ],
+        "skillReasons": {
+          "html": "Required to translate design mockups into web pages.",
+          "css": "Required for pixel-perfect design styling.",
+          "figma": "Required for UI prototyping and design system collaboration."
+        },
         "deadline": "November 20, 2026",
         "contactEmail": "starlight.creative.team@gmail.com",
         "stipend": "Rs 12,000 monthly stipend",
@@ -145,6 +185,17 @@
           "Python",
           "SQL"
         ],
+        "preferredSkills": [
+          "Machine Learning",
+          "Pandas"
+        ],
+        "skillReasons": {
+          "pytorch": "Required to implement deep learning model architectures.",
+          "tensorflow": "Required to maintain legacy ML production pipelines.",
+          "statistics": "Required for hypothesis testing and validation metrics.",
+          "python": "Required for data loading and model training scripts.",
+          "sql": "Required to extract training datasets from relational warehouses."
+        },
         "deadline": "November 30, 2026",
         "contactEmail": "ml-interns@neurodatatech.ai",
         "stipend": "Rs 25,000 per month",

@@ -15,6 +15,7 @@
     "test:paths": "node test-agent-paths.js",
     "test:score": "node test-score.js",
     "test:dynamic": "node test-dynamic.js",
+    "test:careermatch": "node test-careermatch.js",
     "test:demo": "node test-demo-mode.js",
     "test:browser": "node test-browser-e2e.js"
   },
