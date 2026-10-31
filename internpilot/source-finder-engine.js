@@ -350,6 +350,11 @@ async function verifyInternshipSource(postingUrl, options = {}) {
   // Step 2: Check if candidate final URL is already a generic platform page or authwall
   const candidateFinalUrl = finalUrlOption || postingUrl;
   if (isGenericAggregatorLanding(candidateFinalUrl) && !rawHtml) {
+    const authAssessment = evaluateAuthenticityOffline({
+      inaccessible: true,
+      inaccessibleReason: 'GENERIC_LANDING_PAGE',
+      postingUrl
+    });
     return {
       success: false,
       state: 'JOB_POSTING_INACCESSIBLE',
@@ -360,6 +365,8 @@ async function verifyInternshipSource(postingUrl, options = {}) {
       submittedUrl: postingUrl,
       finalUrl: candidateFinalUrl,
       canPasteManually: true,
+      searchLinks: { valid: false, needsManualInput: true, reason: 'The submitted link resolved to a platform homepage rather than a job posting.', query: '', google: null, bing: null },
+      authenticityAssessment: authAssessment,
       evidence: {
         sourceUrl: postingUrl,
         finalUrl: candidateFinalUrl,
