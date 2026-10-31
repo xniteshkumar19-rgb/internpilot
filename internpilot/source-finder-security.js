@@ -220,7 +220,15 @@ function safeFetchUrl(urlString, redirectCount = 0, visited = new Set()) {
       // Anti-DNS-Rebinding Protection:
       // Binds socket resolution directly to the validated public IP, preventing TOCTOU re-resolution
       lookup: (host, opts, cb) => {
-        cb(null, ssrfCheck.validatedIp, ssrfCheck.ipFamily || 4);
+        if (typeof opts === 'function') {
+          cb = opts;
+          opts = {};
+        }
+        if (opts && opts.all) {
+          cb(null, [{ address: ssrfCheck.validatedIp, family: ssrfCheck.ipFamily || 4 }]);
+        } else {
+          cb(null, ssrfCheck.validatedIp, ssrfCheck.ipFamily || 4);
+        }
       },
       timeout: TIMEOUT_MS
     };
