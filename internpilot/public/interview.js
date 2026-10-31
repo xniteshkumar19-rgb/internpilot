@@ -1,6 +1,6 @@
 /**
  * InternPilot - AI Interview Mock Studio Frontend Controller
- * 
+ *
  * Manages:
  * - Studio Dashboard, Category Selection & Prefill Integration
  * - Interactive Question Delivery & Answer Submission
@@ -23,6 +23,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectCount = document.getElementById("select-count");
   const studioDemoToggle = document.getElementById("studio-demo-toggle");
   const btnPrefillSample = document.getElementById("btn-prefill-sample");
+  const loadSampleResumeBtn = document.getElementById("load-sample-resume-btn");
+  const liveEvalLoading = document.getElementById("live-eval-loading");
+  const liveInterviewError = document.getElementById("live-interview-error");
+  const interviewErrorTitle = document.getElementById("interview-error-title");
+  const interviewErrorDesc = document.getElementById("interview-error-desc");
+  const btnRetryEval = document.getElementById("btn-retry-eval");
   const btnStartInterview = document.getElementById("btn-start-interview");
 
   // Category Selector Cards
@@ -144,6 +150,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         sessionStorage.removeItem("internpilot_interview_prefill");
       }
+      // If no prefill in sessionStorage, check saved analyses
+      if (!inputRole.value) {
+        const savedRaw = localStorage.getItem("internpilot_saved_analyses");
+        if (savedRaw) {
+          const list = JSON.parse(savedRaw);
+          if (Array.isArray(list) && list.length > 0) {
+            const latest = list[0];
+            if (latest.role && !inputRole.value) inputRole.value = latest.role;
+            if (latest.company && !inputCompany.value) inputCompany.value = latest.company;
+            if (latest.resumeText && !inputResumeContext.value) inputResumeContext.value = latest.resumeText;
+            if (Array.isArray(latest.weakTopics) && latest.weakTopics.length > 0) {
+              sessionState.weakTopics = latest.weakTopics;
+            }
+          }
+        }
+      }
     } catch {}
   }
 
@@ -167,7 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnPrefillSample.addEventListener("click", async () => {
       inputRole.value = "Frontend Engineering Intern";
       inputCompany.value = "Vanguard Data Labs";
-      
+
       try {
         const res = await fetch("/api/sample-resume");
         if (res.ok) {
@@ -178,6 +200,41 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch {
         inputResumeContext.value = "Rohan Sharma - 1st Year CS Student. Skills: JavaScript, React, HTML, CSS, Git. Projects: Task Manager, Weather App.";
       }
+    });
+  }
+
+
+  // Wire Load Sample Resume Button
+  if (loadSampleResumeBtn) {
+    loadSampleResumeBtn.addEventListener("click", async () => {
+      loadSampleResumeBtn.disabled = true;
+      try {
+        const res = await fetch("/api/sample-resume");
+        if (res.ok) {
+          inputResumeContext.value = await res.text();
+        } else {
+          const res2 = await fetch("/sample-resume.txt");
+          inputResumeContext.value = await res2.text();
+        }
+      } catch {
+        try {
+          const res2 = await fetch("/sample-resume.txt");
+          inputResumeContext.value = await res2.text();
+        } catch {
+          inputResumeContext.value = "ROHAN SHARMA - Computer Science Student. Skills: JavaScript, React, HTML, CSS, Git.";
+        }
+      }
+      if (!inputRole.value) inputRole.value = "Junior Web Developer Intern";
+      if (!inputCompany.value) inputCompany.value = "Apex Cloud Technologies";
+      loadSampleResumeBtn.disabled = false;
+    });
+  }
+
+  // Wire Retry Evaluation Button
+  if (btnRetryEval) {
+    btnRetryEval.addEventListener("click", () => {
+      if (liveInterviewError) liveInterviewError.style.display = "none";
+      btnSubmitAnswer.click();
     });
   }
 
@@ -334,6 +391,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnSubmitAnswer.disabled = true;
     btnSubmitAnswer.textContent = "Evaluating Answer with Rubric...";
+    if (liveEvalLoading) liveEvalLoading.style.display = "block";
+    if (liveInterviewError) liveInterviewError.style.display = "none";
+    if (liveEvalCard) liveEvalCard.style.display = "none";
 
     let evaluation = null;
 
@@ -386,6 +446,9 @@ document.addEventListener("DOMContentLoaded", () => {
     sessionState.answers[sessionState.currentIndex] = answer;
     sessionState.evaluations[sessionState.currentIndex] = evaluation;
 
+    if (liveEvalLoading) liveEvalLoading.style.display = "none";
+    btnSubmitAnswer.disabled = false;
+    btnSubmitAnswer.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Submit Answer for Evaluation`;
     displayEvaluationResult(evaluation);
   });
 
@@ -603,7 +666,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 16. Update History List & Top Practice Analytics
   function updateHistoryAndStats() {
     const history = typeof InterviewEngine !== "undefined" ? InterviewEngine.loadInterviewHistory() : [];
-    
+
     // Update badge counter
     if (badgeHistoryCount) badgeHistoryCount.textContent = `${history.length} session${history.length === 1 ? '' : 's'}`;
     if (statTotalInterviews) statTotalInterviews.textContent = history.length;

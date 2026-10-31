@@ -69,7 +69,17 @@ ADDITIONAL ACTIVITIES
 - Active member of the College Open Source Coding Club.
 - Completed 30 Days of Python coding challenge.`;
 
+let interviewDemoCache = {};
+try {
+  interviewDemoCache = require('./public/interview-demo-cache.json');
+} catch (e) {
+  try {
+    interviewDemoCache = require('../public/interview-demo-cache.json');
+  } catch {}
+}
+
 module.exports = {
   samplePostings,
-  sampleResume
+  sampleResume,
+  interviewDemoCache
 };
