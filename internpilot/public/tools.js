@@ -291,6 +291,10 @@ const PARTIAL_MATCH_MAP = {
     foundation: ["react", "javascript"],
     note: "React component and JSX experience translates directly to Next.js server components and App Router."
   },
+  "node.js": {
+    foundation: ["javascript"],
+    note: "JavaScript fluency allows you to write server-side runtime code and asynchronous event-driven backend logic immediately."
+  },
   "django": {
     foundation: ["python"],
     note: "Python programming proficiency enables rapid mastery of Django's batteries-included MVT web framework."
@@ -340,15 +344,15 @@ const PARTIAL_MATCH_MAP = {
     note: "General backend data storage experience prepares you for Redis in-memory caching and key-value operations."
   },
   "pytorch": {
-    foundation: ["python", "machine learning"],
-    note: "Python fluency and linear algebra/ML principles form the exact foundation for PyTorch tensor pipelines."
+    foundation: ["machine learning", "deep learning"],
+    note: "Machine learning principles and linear algebra form the exact foundation for PyTorch tensor pipelines."
   },
   "tensorflow": {
-    foundation: ["python", "machine learning"],
-    note: "Python ML model knowledge applies directly to TensorFlow and Keras deep learning training graphs."
+    foundation: ["machine learning", "deep learning"],
+    note: "Machine learning model knowledge applies directly to TensorFlow and Keras deep learning training graphs."
   },
   "deep learning": {
-    foundation: ["machine learning", "python", "statistics"],
+    foundation: ["machine learning", "statistics"],
     note: "Classical machine learning fundamentals prepare you for training multi-layer neural networks."
   },
   "docker": {
@@ -392,7 +396,7 @@ const PARTIAL_MATCH_MAP = {
     note: "Python syntax enables quick adoption of NumPy multidimensional array operations."
   },
   "statistics": {
-    foundation: ["data analysis", "excel", "python"],
+    foundation: ["data analysis", "excel"],
     note: "Data exploration and reporting experience provides strong intuition for statistical distributions and testing."
   },
   "flutter": {
@@ -623,13 +627,148 @@ const PROJECT_BLUEPRINTS = [
 ];
 
 // ==========================================
+// 4. CAREERMATCH AI HELPERS
+// ==========================================
+function findEvidenceInResume(resumeText, targetSkill) {
+  if (!resumeText || typeof resumeText !== "string" || !targetSkill) return null;
+  const lines = resumeText.split(/\r?\n/);
+  const escaped = targetSkill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(?<![\\w#+])${escaped}(?![\\w#+])`, "i");
+
+  // Prefer finding in project or experience lines first
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && regex.test(trimmed) && trimmed.length > 15) {
+      return trimmed.length > 130 ? trimmed.slice(0, 127) + "..." : trimmed;
+    }
+  }
+
+  // Fallback to any line containing it
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed && regex.test(trimmed)) {
+      return trimmed.length > 130 ? trimmed.slice(0, 127) + "..." : trimmed;
+    }
+  }
+
+  return null;
+}
+
+function extractResponsibilitiesAndQualifications(postingText) {
+  const responsibilities = [];
+  const qualifications = [];
+  if (!postingText || typeof postingText !== "string") {
+    return { responsibilities, qualifications };
+  }
+  const lines = postingText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let currentSection = null;
+
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if (lower.includes("responsibilit") || lower.includes("duties") || lower.includes("what you will do") || lower.includes("what you'll do") || lower.includes("key tasks") || lower.includes("role overview")) {
+      currentSection = "resp";
+      continue;
+    }
+    if (lower.includes("qualification") || lower.includes("requirements") || lower.includes("who you are") || lower.includes("what we are looking for") || lower.includes("what we're looking for") || lower.includes("eligibility") || lower.includes("prerequisites")) {
+      currentSection = "qual";
+      continue;
+    }
+    const isBullet = /^[-*•·–—]|\d+\.|\b(develop|build|design|collaborate|write|maintain|assist|support|lead|manage|test|deploy|bachelor|master|degree|experience|proficiency|strong|knowledge|familiarity)\b/i.test(line);
+    if (currentSection === "resp" && isBullet && line.length > 12) {
+      const clean = line.replace(/^[-*•·–—\d.]+\s*/, "").trim();
+      if (clean && !responsibilities.includes(clean)) responsibilities.push(clean);
+    } else if (currentSection === "qual" && isBullet && line.length > 12) {
+      const clean = line.replace(/^[-*•·–—\d.]+\s*/, "").trim();
+      if (clean && !qualifications.includes(clean)) qualifications.push(clean);
+    }
+  }
+
+  return { responsibilities: responsibilities.slice(0, 5), qualifications: qualifications.slice(0, 5) };
+}
+
+function extractCategorizedSkillsFromText(postingText) {
+  const textRequired = [];
+  const textPreferred = [];
+
+  if (!postingText || typeof postingText !== "string") {
+    return { textRequired, textPreferred };
+  }
+
+  const lines = postingText.split(/\r?\n/);
+  let currentSection = null;
+
+  for (const line of lines) {
+    const lower = line.toLowerCase().trim();
+
+    if (
+      lower.startsWith("preferred") ||
+      lower.startsWith("nice to have") ||
+      lower.startsWith("good to have") ||
+      lower.startsWith("bonus") ||
+      lower.includes("preferred skills") ||
+      lower.includes("nice-to-have")
+    ) {
+      currentSection = "pref";
+      const lineSkills = extractSkills(line);
+      textPreferred.push(...lineSkills);
+      continue;
+    }
+
+    if (
+      lower.startsWith("required") ||
+      lower.startsWith("requirements") ||
+      lower.startsWith("must have") ||
+      lower.includes("required skills") ||
+      lower.includes("must-have")
+    ) {
+      currentSection = "req";
+      const lineSkills = extractSkills(line);
+      textRequired.push(...lineSkills);
+      continue;
+    }
+
+    if (
+      lower.startsWith("responsibilit") ||
+      lower.startsWith("qualificat") ||
+      lower.startsWith("about") ||
+      lower.startsWith("duties") ||
+      lower.startsWith("what we offer") ||
+      lower.startsWith("stipend") ||
+      lower.startsWith("deadline")
+    ) {
+      currentSection = null;
+      continue;
+    }
+
+    if (currentSection === "pref") {
+      const lineSkills = extractSkills(line);
+      textPreferred.push(...lineSkills);
+    } else if (currentSection === "req") {
+      const lineSkills = extractSkills(line);
+      textRequired.push(...lineSkills);
+    }
+  }
+
+  return { textRequired, textPreferred };
+}
+
+// ==========================================
 // 4. CAREERMATCH AI CORE EVALUATION FUNCTION
 // ==========================================
 function analyzeCareerMatch(resumeText, postingText, aiDetails = null) {
   const resumeSkills = extractSkills(resumeText || "");
   const normalizedResumeSkills = resumeSkills.map(s => s.toLowerCase());
 
-  // Extract job skills (from AI structured details if provided, plus regex extracted fallback)
+  // Extract job responsibilities and qualifications
+  const defaultIntel = extractResponsibilitiesAndQualifications(postingText || "");
+  const responsibilities = (aiDetails && Array.isArray(aiDetails.responsibilities) && aiDetails.responsibilities.length > 0)
+    ? aiDetails.responsibilities
+    : defaultIntel.responsibilities;
+  const qualifications = (aiDetails && Array.isArray(aiDetails.qualifications) && aiDetails.qualifications.length > 0)
+    ? aiDetails.qualifications
+    : defaultIntel.qualifications;
+
+  // Extract job skills (from AI structured details if provided, plus text-section extraction or regex fallback)
   let rawRequired = [];
   let rawPreferred = [];
 
@@ -642,10 +781,19 @@ function analyzeCareerMatch(resumeText, postingText, aiDetails = null) {
     }
   }
 
+  // If no AI structured separation was passed, check if the posting text contains explicit Required vs Preferred sections
+  if (rawRequired.length === 0 && rawPreferred.length === 0) {
+    const textSections = extractCategorizedSkillsFromText(postingText || "");
+    if (textSections.textRequired.length > 0 || textSections.textPreferred.length > 0) {
+      rawRequired.push(...textSections.textRequired);
+      rawPreferred.push(...textSections.textPreferred);
+    }
+  }
+
   // Fallback to regex extraction from job posting text
   const postingRegexSkills = extractSkills(postingText || "");
 
-  // If no structured separation was passed, treat posting regex skills as required
+  // If still no skills separated, treat all posting regex skills as required
   if (rawRequired.length === 0 && rawPreferred.length === 0) {
     rawRequired = postingRegexSkills;
   } else {
@@ -705,6 +853,8 @@ function analyzeCareerMatch(resumeText, postingText, aiDetails = null) {
       missing: [],
       requiredSkills: [],
       preferredSkills: [],
+      responsibilities: [],
+      qualifications: [],
       roadmap: [],
       projects: [],
       scoreBreakdown: "No recognizable skills identified in the job posting to evaluate.",
@@ -747,13 +897,19 @@ function analyzeCareerMatch(resumeText, postingText, aiDetails = null) {
 
     if (foundFoundation) {
       earnedPoints += 0.5 * weight;
+      const resumeQuote = findEvidenceInResume(resumeText, foundFoundation);
+      const evidenceText = resumeQuote
+        ? `Resume proof (${foundFoundation.toUpperCase()}): "${resumeQuote}" — ${partialRule.note}`
+        : `Resume mentions ${foundFoundation.toUpperCase()} — ${partialRule.note}`;
+
       partial.push({
         ...skillObj,
         status: "partial",
         credit: 0.5,
         weight,
         foundationSkill: foundFoundation,
-        foundationEvidence: partialRule.note
+        foundationEvidence: evidenceText,
+        resumeSnippet: resumeQuote
       });
     } else {
       // Check 3: Missing competency
@@ -851,6 +1007,8 @@ function analyzeCareerMatch(resumeText, postingText, aiDetails = null) {
     missing,
     requiredSkills: requiredList,
     preferredSkills: preferredList,
+    responsibilities,
+    qualifications,
     roadmap,
     projects,
     scoreBreakdown,
@@ -1101,6 +1259,139 @@ function updateApplication(id, updates) {
 }
 
 // ==========================================
+// FEATURE 2: SAVED CAREERMATCH ANALYSES STORAGE
+// (localStorage key: "internpilot_saved_analyses")
+// ==========================================
+
+const SAVED_ANALYSES_STORAGE_KEY = "internpilot_saved_analyses";
+
+function loadSavedAnalyses() {
+  try {
+    if (typeof localStorage === "undefined") return [];
+    const data = localStorage.getItem(SAVED_ANALYSES_STORAGE_KEY);
+    if (!data) return [];
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn("Could not load saved analyses from localStorage:", err);
+    return [];
+  }
+}
+
+function saveCareerAnalysis(analysis) {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    if (!analysis || typeof analysis !== "object") return null;
+
+    const current = loadSavedAnalyses();
+    const id = analysis.id || ("cm_analysis_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7));
+    const nowIso = new Date().toISOString();
+
+    // Snapshot current activity progress states for this analysis
+    const activityProgress = analysis.activityProgress ? { ...analysis.activityProgress } : {};
+    if (Array.isArray(analysis.roadmap)) {
+      analysis.roadmap.forEach((r, rIdx) => {
+        const skill = r.skill || rIdx;
+        const prefix = `cm_act_${encodeURIComponent(skill)}_`;
+        (r.practicalActivities || []).forEach((_, actIdx) => {
+          const key = prefix + actIdx;
+          if (activityProgress[key] === undefined && typeof localStorage !== "undefined") {
+            const val = localStorage.getItem(key);
+            if (val === "done") {
+              activityProgress[key] = "done";
+            }
+          }
+        });
+      });
+    }
+
+    const newRecord = {
+      id,
+      savedAt: analysis.savedAt || nowIso,
+      updatedAt: nowIso,
+      role: analysis.role || "Internship Role",
+      company: analysis.company || "Company",
+      percent: analysis.percent !== undefined && analysis.percent !== null ? analysis.percent : 0,
+      level: analysis.level || "moderate",
+      scoreBreakdown: analysis.scoreBreakdown || "",
+      matched: Array.isArray(analysis.matched) ? analysis.matched : [],
+      partial: Array.isArray(analysis.partial) ? analysis.partial : [],
+      missing: Array.isArray(analysis.missing) ? analysis.missing : [],
+      requiredSkills: Array.isArray(analysis.requiredSkills) ? analysis.requiredSkills : [],
+      preferredSkills: Array.isArray(analysis.preferredSkills) ? analysis.preferredSkills : [],
+      responsibilities: Array.isArray(analysis.responsibilities) ? analysis.responsibilities : [],
+      qualifications: Array.isArray(analysis.qualifications) ? analysis.qualifications : [],
+      roadmap: Array.isArray(analysis.roadmap) ? analysis.roadmap : [],
+      projects: Array.isArray(analysis.projects) ? analysis.projects : [],
+      scamAssessment: analysis.scamAssessment || { riskScore: 0, level: "low", reasons: [] },
+      activityProgress: activityProgress,
+      postingSnippet: analysis.postingSnippet || ""
+    };
+
+    const existingIdx = current.findIndex(a => a.id === id);
+    if (existingIdx !== -1) {
+      current[existingIdx] = newRecord;
+    } else {
+      current.unshift(newRecord);
+    }
+
+    localStorage.setItem(SAVED_ANALYSES_STORAGE_KEY, JSON.stringify(current));
+    return newRecord;
+  } catch (err) {
+    console.error("Error saving career analysis to localStorage:", err);
+    return null;
+  }
+}
+
+function deleteSavedAnalysis(id) {
+  try {
+    if (typeof localStorage === "undefined" || !id) return false;
+    const current = loadSavedAnalyses();
+    const filtered = current.filter(a => a.id !== id);
+    if (filtered.length === current.length) return false;
+    localStorage.setItem(SAVED_ANALYSES_STORAGE_KEY, JSON.stringify(filtered));
+    return true;
+  } catch (err) {
+    console.error("Error deleting saved analysis from localStorage:", err);
+    return false;
+  }
+}
+
+function getSavedAnalysis(id) {
+  try {
+    const list = loadSavedAnalyses();
+    return list.find(a => a.id === id) || null;
+  } catch {
+    return null;
+  }
+}
+
+function calculateRoadmapProgress(analysis) {
+  if (!analysis || !Array.isArray(analysis.roadmap) || analysis.roadmap.length === 0) {
+    return { completed: 0, total: 0, percent: 0 };
+  }
+
+  const prog = analysis.activityProgress || {};
+  let total = 0;
+  let completed = 0;
+
+  analysis.roadmap.forEach((r, rIdx) => {
+    const skill = r.skill || rIdx;
+    const prefix = `cm_act_${encodeURIComponent(skill)}_`;
+    (r.practicalActivities || []).forEach((_, actIdx) => {
+      total++;
+      const key = prefix + actIdx;
+      const isDone = (prog && (prog[key] === "done" || prog[key] === true)) ||
+        (typeof localStorage !== "undefined" && localStorage.getItem(key) === "done");
+      if (isDone) completed++;
+    });
+  });
+
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return { completed, total, percent };
+}
+
+// ==========================================
 // UNIVERSAL MODULE EXPORT GUARD
 // ==========================================
 if (typeof module !== "undefined" && module.exports) {
@@ -1117,9 +1408,17 @@ if (typeof module !== "undefined" && module.exports) {
     extractSkills,
     matchSkills,
     analyzeCareerMatch,
+    findEvidenceInResume,
+    extractResponsibilitiesAndQualifications,
     computeActivity,
     saveApplication,
     updateApplication,
-    loadApplications
+    loadApplications,
+    SAVED_ANALYSES_STORAGE_KEY,
+    loadSavedAnalyses,
+    saveCareerAnalysis,
+    deleteSavedAnalysis,
+    getSavedAnalysis,
+    calculateRoadmapProgress
   };
 }

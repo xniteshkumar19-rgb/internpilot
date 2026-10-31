@@ -255,6 +255,43 @@ Note: If the resume has no name, use the placeholder [Your Name]. If the company
 // 3. UI RENDERING & DOM LOGIC
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
+  // Mobile sidebar toggle
+  const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+  const appSidebar = document.getElementById("app-sidebar");
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  const sidebarCloseBtn = document.getElementById("sidebar-close-btn");
+
+  if (mobileMenuToggle && appSidebar) {
+    mobileMenuToggle.addEventListener("click", () => {
+      appSidebar.classList.add("open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.add("active");
+    });
+  }
+  if (sidebarCloseBtn && appSidebar) {
+    sidebarCloseBtn.addEventListener("click", () => {
+      appSidebar.classList.remove("open");
+      if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+    });
+  }
+  if (sidebarBackdrop && appSidebar) {
+    sidebarBackdrop.addEventListener("click", () => {
+      appSidebar.classList.remove("open");
+      sidebarBackdrop.classList.remove("active");
+    });
+  }
+
+  // Auto-close sidebar on mobile link click
+  if (appSidebar) {
+    appSidebar.querySelectorAll(".sidebar-nav-item").forEach(item => {
+      item.addEventListener("click", () => {
+        if (window.innerWidth <= 992) {
+          appSidebar.classList.remove("open");
+          if (sidebarBackdrop) sidebarBackdrop.classList.remove("active");
+        }
+      });
+    });
+  }
+
   const resumeInput = document.getElementById("resume-input");
   const postingInput = document.getElementById("posting-input");
   const runBtn = document.getElementById("run-btn");
@@ -323,16 +360,59 @@ document.addEventListener("DOMContentLoaded", () => {
       activityLevel = act.level;
     }
 
-    if (dashTotalApps) dashTotalApps.textContent = total;
-    if (dashAppliedApps) dashAppliedApps.textContent = applied;
-    if (dashProgressApps) dashProgressApps.textContent = progress;
-    if (dashActivityScore) dashActivityScore.innerHTML = `${activityScore}<small style="font-size: 0.95rem; font-weight: normal; color: var(--text-faint);">/100</small>`;
-    if (dashActivityLevel) dashActivityLevel.textContent = activityLevel;
-    if (dashDueSoon) dashDueSoon.textContent = dueSoon;
+    if (dashTotalApps) {
+      dashTotalApps.textContent = total;
+      const sub = dashTotalApps.parentElement.querySelector(".overview-stat-sub");
+      if (sub) sub.textContent = total === 0 ? "No applications tracked yet" : "Tracked in local storage";
+    }
+    if (dashAppliedApps) {
+      dashAppliedApps.textContent = applied;
+      const sub = dashAppliedApps.parentElement.querySelector(".overview-stat-sub");
+      if (sub) sub.textContent = applied === 0 ? "No outreach sent yet" : "Outreach completed";
+    }
+    if (dashProgressApps) {
+      dashProgressApps.textContent = progress;
+      const sub = dashProgressApps.parentElement.querySelector(".overview-stat-sub");
+      if (sub) sub.textContent = progress === 0 ? "No active interviews yet" : "Active discussions";
+    }
+    if (dashActivityScore) {
+      dashActivityScore.innerHTML = `${activityScore}<small style="font-size: 0.95rem; font-weight: normal; color: var(--text-faint);">/100</small>`;
+    }
+    if (dashActivityLevel) {
+      dashActivityLevel.textContent = total === 0 ? "No activity recorded yet" : activityLevel;
+    }
+    if (dashDueSoon) {
+      dashDueSoon.textContent = dueSoon;
+      const sub = dashDueSoon.parentElement.querySelector(".overview-stat-sub");
+      if (sub) sub.textContent = dueSoon === 0 ? "No upcoming deadlines" : "Next 7 calendar days";
+    }
+
+    const dashSaved = document.getElementById("dash-saved-analyses");
+    if (dashSaved) {
+      const savedList = typeof loadSavedAnalyses === "function" ? loadSavedAnalyses() : [];
+      dashSaved.textContent = savedList.length;
+    }
   }
 
-  // Initial dashboard load
+  // Initial dashboard load & saved analyses render
   updateDashboardBanner();
+  if (typeof renderSavedAnalysesList === "function") {
+    renderSavedAnalysesList();
+  }
+
+  // Hook nav and stat card jump to saved analyses section
+  const navSavedBtn = document.getElementById("nav-saved-analyses-btn");
+  const statSavedCard = document.getElementById("card-saved-analyses-stat");
+  const savedSec = document.getElementById("saved-analyses-section");
+
+  [navSavedBtn, statSavedCard].forEach(el => {
+    if (el && savedSec) {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        savedSec.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+  });
 
   // Resume File Upload & Parsing logic
   function setResumeContent(text, filename = "") {
@@ -469,6 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (resumeInput) {
     resumeInput.addEventListener("input", () => {
+    updateCandidateAvatar(resumeInput.value);
       if (resumeCountHint) {
         resumeCountHint.textContent = `${resumeInput.value.length} characters`;
       }
@@ -511,19 +592,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 1. Populate sample posting dropdown from /api/test-postings
+  // 1. Populate sample posting dropdown from /api/test-postings (with fallback to /test-postings.json)
+  function renderPostings(postings) {
+    if (!Array.isArray(postings)) return;
+    testPostingsData = postings;
+    samplePostingSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+    postings.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = `[${p.label.toUpperCase()}] ${p.id}`;
+      samplePostingSelect.appendChild(opt);
+    });
+  }
+
   fetch("/api/test-postings")
-    .then(r => r.json())
-    .then(postings => {
-      testPostingsData = postings;
-      postings.forEach(p => {
-        const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = `[${p.label.toUpperCase()}] ${p.id}`;
-        samplePostingSelect.appendChild(opt);
-      });
+    .then(r => {
+      if (!r.ok) throw new Error("API status " + r.status);
+      return r.json();
     })
-    .catch(err => console.warn("Could not load test postings:", err));
+    .then(renderPostings)
+    .catch(() => {
+      fetch("/test-postings.json")
+        .then(r => r.json())
+        .then(renderPostings)
+        .catch(err => console.warn("Could not load test postings:", err));
+    });
 
   samplePostingSelect.addEventListener("change", (e) => {
     const selectedId = e.target.value;
@@ -534,13 +627,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  function fetchSampleResume() {
+    return fetch("/api/sample-resume")
+      .then(r => {
+        if (!r.ok) throw new Error("API status " + r.status);
+        return r.text();
+      })
+      .catch(() => fetch("/sample-resume.txt").then(r => r.text()));
+  }
+
   // Preload sample resume immediately for instant synchronous availability
-  fetch("/api/sample-resume")
-    .then(r => r.text())
+  fetchSampleResume()
     .then(text => { sampleResumeRaw = text; })
     .catch(() => {});
 
-  // 2. Populate sample resume button from /api/sample-resume
+  // 2. Populate sample resume button from /api/sample-resume (with fallback to /sample-resume.txt)
   loadResumeBtn.addEventListener("click", () => {
     if (sampleResumeRaw) {
       setResumeContent(sampleResumeRaw, "sample-resume.txt (Rohan Sharma)");
@@ -551,8 +652,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setResumeContent(sampleResumeRaw, "sample-resume.txt (Rohan Sharma)");
       return;
     }
-    fetch("/api/sample-resume")
-      .then(r => r.text())
+    fetchSampleResume()
       .then(text => {
         sampleResumeRaw = text;
         setResumeContent(text, "sample-resume.txt (Rohan Sharma)");
@@ -571,128 +671,14 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/'/g, "&#039;");
   }
 
-  // Render Dynamic Verdict Sentence at top of review column
+  // Render Dynamic Verdict (Deactivated - Scam scoring removed per specifications)
   function renderVerdict(level, score, reasons = []) {
-    if (!verdictBanner || !verdictBadge || !verdictSentence) return;
-
-    verdictBanner.className = "verdict-banner";
-    if (level === "high") {
-      verdictBanner.classList.add("verdict-danger");
-      verdictBadge.className = "badge badge-danger";
-      verdictBadge.textContent = "HIGH RISK";
-      const primaryReason = reasons[0];
-      let detail = "asks for a registration or upfront fee";
-      if (primaryReason) {
-        if (primaryReason.evidence) {
-          detail = `asks for "${primaryReason.evidence}"`;
-        } else if (primaryReason.rule) {
-          detail = primaryReason.rule.toLowerCase();
-        }
-      }
-      verdictSentence.textContent = `Don't apply yet: this posting ${detail}.`;
-    } else if (level === "medium") {
-      verdictBanner.classList.add("verdict-caution");
-      verdictBadge.className = "badge badge-warning";
-      verdictBadge.textContent = "MEDIUM RISK";
-      const primaryReason = reasons[0];
-      let detail = "suspicious indicators";
-      if (primaryReason && primaryReason.rule) {
-        detail = primaryReason.rule.toLowerCase();
-      }
-      verdictSentence.textContent = `Proceed with caution: this posting shows ${detail}.`;
-    } else {
-      verdictBanner.classList.add("verdict-safe");
-      verdictBadge.className = "badge badge-success";
-      verdictBadge.textContent = "LOW RISK";
-      verdictSentence.textContent = "Looking good: no common scam warning signs detected.";
-    }
-    verdictBanner.style.display = "flex";
+    if (verdictBanner) verdictBanner.style.display = "none";
   }
 
-  // Render Marked-Up Posting with Sequential Highlighter Ignitions
+  // Render Marked-Up Posting (Deactivated - Scam evidence highlights removed)
   function renderAnnotatedPosting(postingText, reasons = []) {
-    if (!annotatedCard || !annotatedBody) return;
-
-    if (!postingText || !postingText.trim()) {
-      annotatedCard.style.display = "none";
-      return;
-    }
-
-    if (!reasons || reasons.length === 0) {
-      if (annotatedCountBadge) annotatedCountBadge.textContent = "0 flags (Clean)";
-      annotatedBody.textContent = postingText;
-      annotatedCard.style.display = "block";
-      return;
-    }
-
-    if (annotatedCountBadge) {
-      annotatedCountBadge.textContent = `${reasons.length} warning flag${reasons.length === 1 ? "" : "s"}`;
-    }
-
-    // Collect all match ranges
-    const ranges = [];
-    reasons.forEach((r, rIdx) => {
-      if (!r.evidence) return;
-      const ev = r.evidence.trim();
-      if (!ev) return;
-
-      const lowerPost = postingText.toLowerCase();
-      const lowerEv = ev.toLowerCase();
-      let searchStart = 0;
-      while (searchStart < lowerPost.length) {
-        const idx = lowerPost.indexOf(lowerEv, searchStart);
-        if (idx === -1) break;
-        ranges.push({
-          start: idx,
-          end: idx + lowerEv.length,
-          rule: r.rule,
-          points: r.points,
-          evidence: postingText.substring(idx, idx + lowerEv.length),
-          order: rIdx
-        });
-        searchStart = idx + Math.max(lowerEv.length, 1);
-      }
-    });
-
-    // Sort by start position
-    ranges.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
-
-    // Merge overlapping ranges
-    const merged = [];
-    for (const range of ranges) {
-      if (merged.length === 0) {
-        merged.push(range);
-      } else {
-        const last = merged[merged.length - 1];
-        if (range.start < last.end) {
-          if (range.end > last.end) {
-            last.end = range.end;
-          }
-        } else {
-          merged.push(range);
-        }
-      }
-    }
-
-    // Build markup safely
-    let html = "";
-    let lastIndex = 0;
-    merged.forEach((m, mIdx) => {
-      if (m.start > lastIndex) {
-        html += escapeHtml(postingText.substring(lastIndex, m.start));
-      }
-      const matchedText = postingText.substring(m.start, m.end);
-      const ruleLabel = `[+${m.points || 0} pts] ${m.rule || "Suspicious pattern"}`;
-      html += `<mark class="evidence-mark" tabindex="0" data-rule="${escapeHtml(ruleLabel)}" style="--step-idx: ${mIdx};">${escapeHtml(matchedText)}</mark>`;
-      lastIndex = m.end;
-    });
-
-    if (lastIndex < postingText.length) {
-      html += escapeHtml(postingText.substring(lastIndex));
-    }
-
-    annotatedBody.innerHTML = html;
-    annotatedCard.style.display = "block";
+    if (annotatedCard) annotatedCard.style.display = "none";
   }
 
   // Live log renderer callback
@@ -759,84 +745,116 @@ document.addEventListener("DOMContentLoaded", () => {
         break;
       }
 
-      case "scam-clean":
-        renderVerdict("low", entry.score, []);
-        renderAnnotatedPosting(postingInput.value, []);
-        stepDiv.innerHTML = `
-          <div class="log-step-header">
-            <span class="log-tick" aria-hidden="true">✓</span>
-            <span>${escapeHtml(entry.title)}</span>
-            <span class="badge badge-success">LOW RISK (Score: ${entry.score}/100)</span>
-          </div>
-          <span class="log-decision">${escapeHtml(entry.decisionText)}</span>
-        `;
-        break;
-
-      case "scam-warn": {
-        renderVerdict("medium", entry.score, entry.reasons);
-        renderAnnotatedPosting(postingInput.value, entry.reasons);
-        const reasonsHtml = entry.reasons.map(r => `
-          <li><strong>[+${r.points} pts] ${escapeHtml(r.rule)}</strong> — Evidence found: <em>"${escapeHtml(r.evidence)}"</em></li>
-        `).join("");
-
-        stepDiv.innerHTML = `
-          <div class="log-step-header">
-            <span class="log-tick" aria-hidden="true">✓</span>
-            <span>${escapeHtml(entry.title)}</span>
-            <span class="badge badge-warning">MEDIUM RISK (Score: ${entry.score}/100)</span>
-          </div>
-          <div class="alert-card alert-warning">
-            <p><strong>Warning Signs Detected:</strong></p>
-            <ul class="reasons-list">${reasonsHtml}</ul>
-          </div>
-          <span class="log-decision">${escapeHtml(entry.decisionText)}</span>
-        `;
-        break;
-      }
-
-      case "scam-halt": {
-        renderVerdict("high", entry.score, entry.reasons);
-        renderAnnotatedPosting(postingInput.value, entry.reasons);
-        const reasonsHtml = entry.reasons.map(r => `
-          <li><strong>[+${r.points} pts] ${escapeHtml(r.rule)}</strong> — Evidence found: <em>"${escapeHtml(r.evidence)}"</em></li>
-        `).join("");
-
-        stepDiv.innerHTML = `
-          <div class="log-step-header">
-            <span class="badge badge-danger">HIGH SCAM RISK</span>
-            <span class="badge badge-danger">Risk Score: ${entry.score}/100</span>
-          </div>
-          <div class="alert-card alert-danger">
-            <p><strong>Critical Risk Triggers Identified:</strong></p>
-            <ul class="reasons-list">${reasonsHtml}</ul>
-            <div class="safety-tips-box">
-              <h4>Essential Safety Tips:</h4>
-              <ul>
-                <li>Never pay any registration fee, kit charges, or security deposit.</li>
-                <li>Never share Aadhaar, PAN card, or bank account details prior to verification.</li>
-                <li>Verify the company on its official corporate website or domain.</li>
-              </ul>
-            </div>
-          </div>
-          <span class="log-decision">${escapeHtml(entry.decisionText)}</span>
-          <div>
-            <button type="button" class="btn-secondary btn-resume btn-continue-anyway">Continue anyway (at your own risk)</button>
-          </div>
-        `;
-
-        const continueBtn = stepDiv.querySelector(".btn-continue-anyway");
-        continueBtn.addEventListener("click", () => {
-          continueBtn.disabled = true;
-          continueBtn.textContent = "Resumed";
-          if (typeof entry.onContinue === "function") {
-            entry.onContinue();
-          }
-        });
-        break;
-      }
 
   // Render rich CareerMatch AI Analysis, Gap Breakdown, Personalized Roadmaps & Student Projects
+  
+  // Dynamic candidate name extraction and avatar update
+  function updateCandidateAvatar(text) {
+    if (!text || typeof text !== "string") return;
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    if (lines.length === 0) return;
+
+    // Check first non-empty line for a candidate name (2-3 words, no symbols)
+    const firstLine = lines[0];
+    if (firstLine.length < 35 && /^[A-Za-z\s\.]+$/.test(firstLine) && !/resume|curriculum|cv|profile/i.test(firstLine)) {
+      const nameParts = firstLine.split(/\s+/);
+      const name = nameParts.slice(0, 2).join(" ");
+      const initials = nameParts.map(p => p[0]).slice(0, 2).join("").toUpperCase();
+
+      const nameEl = document.getElementById("user-avatar-name");
+      const initEl = document.getElementById("user-avatar-initials");
+      if (nameEl) nameEl.textContent = name;
+      if (initEl && initials) initEl.textContent = initials;
+    }
+  }
+
+  
+  // Synchronize learning roadmap to dedicated #learning-roadmap-section
+  function syncLearningRoadmapSection(careerMatchData, roleTitle) {
+    const section = document.getElementById("learning-roadmap-section");
+    const container = document.getElementById("learning-roadmap-content");
+    const statusBadge = document.getElementById("roadmap-status-badge");
+    if (!container) return;
+
+    const cm = careerMatchData;
+    const missing = (cm && Array.isArray(cm.missing)) ? cm.missing : [];
+    const partial = (cm && Array.isArray(cm.partial)) ? cm.partial : [];
+    const roadmapItems = (cm && Array.isArray(cm.roadmap) && cm.roadmap.length > 0)
+      ? cm.roadmap
+      : [...missing, ...partial].map(m => ({
+          skill: m.name || m,
+          importance: m.importance === 'preferred' ? 'Medium (Preferred)' : 'High (Required)',
+          level: 'Beginner',
+          whyItMatters: m.reason || 'Key competency for this role.',
+          estimatedHours: '10–14 hours (1–2 weeks)',
+          topics: ['Core syntax and structure', 'Best practices and project patterns', 'Real-world integration'],
+          practicalActivities: [
+            'Complete a hands-on tutorial and exercises.',
+            'Build a focused mini-project applying key concepts.',
+            'Push your working code to GitHub with documentation.'
+          ]
+        }));
+
+    if (roadmapItems.length === 0) return;
+
+    if (statusBadge) {
+      statusBadge.textContent = roleTitle ? `Active: ${roleTitle}` : "Active Roadmap";
+      statusBadge.className = "badge badge-success";
+    }
+
+    const itemsHtml = roadmapItems.map((r, rIdx) => {
+      const storagePrefix = `cm_act_${encodeURIComponent(r.skill || rIdx)}_`;
+      const activitiesHtml = (r.practicalActivities || []).map((act, actIdx) => {
+        const key = storagePrefix + actIdx;
+        const isDone = typeof localStorage !== "undefined" && localStorage.getItem(key) === "done";
+        return `
+          <label class="roadmap-activity-item ${isDone ? 'activity-completed' : ''}">
+            <input type="checkbox" class="roadmap-act-chk" data-key="${escapeHtml(key)}" ${isDone ? 'checked' : ''} />
+            <span class="act-text">${escapeHtml(act)}</span>
+          </label>
+        `;
+      }).join("");
+
+      return `
+        <div class="roadmap-step-card">
+          <div class="roadmap-step-header">
+            <div class="roadmap-step-left">
+              <span class="roadmap-step-num">Step ${rIdx + 1}</span>
+              <h4 class="roadmap-step-title">${escapeHtml(r.skill)}</h4>
+            </div>
+            <div class="roadmap-step-meta">
+              <span class="badge ${r.importance && r.importance.includes('High') ? 'badge-danger' : 'badge-warning'}">${escapeHtml(r.importance)}</span>
+              <span class="roadmap-hours">⏱ ${escapeHtml(r.estimatedHours)}</span>
+            </div>
+          </div>
+          ${r.foundationNote ? `<div class="roadmap-foundation-box">💡 <strong>Advantage:</strong> ${escapeHtml(r.foundationNote)}</div>` : ''}
+          <div class="roadmap-why"><strong>Why it matters:</strong> ${escapeHtml(r.whyItMatters)}</div>
+          <div class="roadmap-topics-wrap">
+            <span class="roadmap-topics-label">Key Topics:</span>
+            <ul class="roadmap-topics-list">
+              ${(r.topics || []).map(t => `<li>${escapeHtml(t)}</li>`).join("")}
+            </ul>
+          </div>
+          <div class="roadmap-activities-box">
+            <div class="roadmap-activities-label">
+              <span>Practical Activities (Track progress):</span>
+            </div>
+            <div class="roadmap-activities-list">${activitiesHtml}</div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.innerHTML = `<div class="careermatch-roadmap-section" style="margin-top: 0;">${itemsHtml}</div>`;
+    bindRoadmapCheckboxes(container);
+  }
+
   function renderCareerMatchCard(entry) {
+    if (entry && entry.careerMatch) {
+      setTimeout(() => {
+        syncLearningRoadmapSection(entry.careerMatch, entry.role || entry.title);
+      }, 20);
+    }
     const cm = entry.careerMatch;
     const percent = entry.percent !== null ? entry.percent : 0;
     const isHalt = entry.type === "match-halt";
@@ -863,6 +881,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const partialPct = totalCount > 0 ? Math.round((partialItems.length / totalCount) * 100) : 0;
     const missingPct = Math.max(0, 100 - matchedPct - partialPct);
 
+    // Job Posting Intelligence: Responsibilities & Qualifications
+    const responsibilities = (cm && Array.isArray(cm.responsibilities)) ? cm.responsibilities : [];
+    const qualifications = (cm && Array.isArray(cm.qualifications)) ? cm.qualifications : [];
+
+    // Filter counts for tabs
+    const allCompItems = [...matchedItems, ...partialItems, ...missingItems];
+    const requiredCount = allCompItems.filter(s => s.importance === "required").length;
+    const preferredCount = allCompItems.filter(s => s.importance === "preferred").length;
+
     // Badges & status styling
     let badgeClass = "badge-danger";
     let badgeText = `LOW MATCH (${percent}%)`;
@@ -874,10 +901,10 @@ document.addEventListener("DOMContentLoaded", () => {
       badgeText = `MODERATE MATCH (${percent}%)`;
     }
 
-    // Build Competency Matrix HTML
+    // Build Competency Matrix HTML with filter attributes
     const matchedHtml = matchedItems.length > 0
       ? matchedItems.map(s => `
-          <div class="competency-card status-matched">
+          <div class="competency-card status-matched" data-status="matched" data-importance="${s.importance === 'preferred' ? 'preferred' : 'required'}">
             <div class="comp-header">
               <span class="comp-name">${escapeHtml(s.name || s)}</span>
               <span class="comp-badge badge-matched">✓ Matched</span>
@@ -886,14 +913,14 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="comp-reason">${escapeHtml(s.reason || "Competency verified from your uploaded resume.")}</div>
           </div>
         `).join("")
-      : `<div class="comp-empty">No direct competency matches found in resume.</div>`;
+      : `<div class="comp-empty" data-status="matched" data-importance="required">No direct competency matches found in resume.</div>`;
 
     const partialHtml = partialItems.length > 0
       ? partialItems.map(s => `
-          <div class="competency-card status-partial">
+          <div class="competency-card status-partial" data-status="partial" data-importance="${s.importance === 'preferred' ? 'preferred' : 'required'}">
             <div class="comp-header">
               <span class="comp-name">${escapeHtml(s.name || s)}</span>
-              <span class="comp-badge badge-partial">⚡ Partial Match</span>
+              <span class="comp-badge badge-partial">⚡ Partial Match (0.5x)</span>
               <span class="comp-importance ${s.importance === 'preferred' ? 'importance-pref' : 'importance-req'}">${s.importance === 'preferred' ? 'Preferred' : 'Required'}</span>
             </div>
             <div class="comp-foundation"><strong>Foundation:</strong> ${escapeHtml(s.foundationEvidence || `Candidate's experience in ${s.foundationSkill || 'related concepts'} accelerates learning.`)}</div>
@@ -904,7 +931,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const missingHtml = missingItems.length > 0
       ? missingItems.map(s => `
-          <div class="competency-card status-missing">
+          <div class="competency-card status-missing" data-status="missing" data-importance="${s.importance === 'preferred' ? 'preferred' : 'required'}">
             <div class="comp-header">
               <span class="comp-name">${escapeHtml(s.name || s)}</span>
               <span class="comp-badge badge-missing">✕ Skill Gap</span>
@@ -913,7 +940,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="comp-reason"><strong>Why Needed:</strong> ${escapeHtml(s.reason || "Essential skill required to perform duties for this position.")}</div>
           </div>
         `).join("")
-      : `<div class="comp-empty">Zero missing skills! You meet all listed competencies.</div>`;
+      : `<div class="comp-empty" data-status="missing" data-importance="required">Zero missing skills! You meet all listed competencies.</div>`;
 
     // Personalized Learning Roadmap HTML
     const roadmapItems = (cm && Array.isArray(cm.roadmap) && cm.roadmap.length > 0)
@@ -1034,6 +1061,65 @@ document.addEventListener("DOMContentLoaded", () => {
       <!-- CareerMatch Main Card Container -->
       <div class="careermatch-container ${isHalt ? 'careermatch-halt-state' : ''}">
         
+        <!-- CareerMatch Actions Toolbar (PDF Export & Save Progress) -->
+        <div class="careermatch-actions-bar">
+          <div class="cm-actions-left">
+            <button type="button" class="btn-primary btn-cm-download-pdf" title="Download executive CareerMatch PDF report">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download PDF Report
+            </button>
+            <button type="button" class="btn-secondary btn-cm-print-report" title="Preview or print report">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print / Preview
+            </button>
+            <button type="button" class="btn-secondary btn-cm-save-progress" title="Save this analysis and roadmap state to local storage">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Progress
+            </button>
+            <button type="button" class="btn-secondary btn-cm-mock-interview" title="Practice mock interview for this role in AI Interview Studio">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Practice Interview
+            </button>
+          </div>
+          <div class="cm-actions-right">
+            <a href="#saved-analyses-section" class="btn-subtle btn-cm-view-saved">
+              My Saved Analyses (<span class="cm-saved-count-inline">0</span>)
+            </a>
+          </div>
+        </div>
+
+        <!-- Circular Score Gauge Overview -->
+        <div class="match-score-overview-card">
+          <div class="circular-score-gauge">
+            <svg class="score-ring-svg" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="scoreGaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#6366F1" />
+                  <stop offset="100%" stop-color="#2DD4BF" />
+                </linearGradient>
+              </defs>
+              <circle class="score-ring-bg" cx="50" cy="50" r="40" stroke-width="8" />
+              <circle class="score-ring-fill" cx="50" cy="50" r="40" stroke-width="8"
+                stroke="url(#scoreGaugeGrad)"
+                stroke-dasharray="251.327"
+                stroke-dashoffset="${(251.327 * (1 - percent / 100)).toFixed(1)}" />
+            </svg>
+            <div class="score-ring-center">
+              <span class="score-ring-pct">${percent}%</span>
+              <span class="score-ring-label">MATCH</span>
+            </div>
+          </div>
+          <div class="score-summary-details">
+            <h3 class="score-level-title">${percent >= 65 ? 'Strong Opportunity Alignment' : percent >= 35 ? 'Moderate Alignment with Growth Potential' : 'Foundational Competencies Needed'}</h3>
+            <p class="score-level-desc">${escapeHtml((cm && cm.scoreBreakdown) || entry.description || 'Personalized skill alignment calculated using grounded resume evidence.')}</p>
+            <div class="score-stat-pills">
+              <span class="stat-pill pill-matched">✓ ${matchedItems.length} Matched</span>
+              ${partialItems.length > 0 ? `<span class="stat-pill pill-partial">⚡ ${partialItems.length} Partial (Foundations)</span>` : ''}
+              <span class="stat-pill pill-missing">✗ ${missingItems.length} Missing Gaps</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Top Visual Skill Gap Breakdown Bar -->
         <div class="careermatch-gap-summary">
           <div class="gap-bar-label-row">
@@ -1053,12 +1139,50 @@ document.addEventListener("DOMContentLoaded", () => {
           ${cm && cm.scoreBreakdown ? `<div class="gap-formula-note">ℹ️ ${escapeHtml(cm.scoreBreakdown)}</div>` : ''}
         </div>
 
+        <!-- Job Responsibilities & Qualifications Intelligence -->
+        ${(responsibilities.length > 0 || qualifications.length > 0) ? `
+          <div class="posting-intel-grid">
+            ${responsibilities.length > 0 ? `
+              <div class="intel-card intel-card-resp">
+                <div class="intel-card-header">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  <h5>Key Role Responsibilities (${responsibilities.length})</h5>
+                </div>
+                <ul class="intel-list">
+                  ${responsibilities.map(r => `<li>${escapeHtml(r)}</li>`).join("")}
+                </ul>
+              </div>
+            ` : ''}
+            ${qualifications.length > 0 ? `
+              <div class="intel-card intel-card-qual">
+                <div class="intel-card-header">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <h5>Qualifications & Prerequisites (${qualifications.length})</h5>
+                </div>
+                <ul class="intel-list">
+                  ${qualifications.map(q => `<li>${escapeHtml(q)}</li>`).join("")}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
         <!-- Competency Details Matrix -->
         <div class="careermatch-matrix-section">
-          <h4 class="careermatch-section-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Competency Details & Requirements
-          </h4>
+          <div class="comp-matrix-header-row">
+            <h4 class="careermatch-section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Competency Alignment Matrix
+            </h4>
+            <div class="comp-filter-tabs" role="tablist" aria-label="Filter competencies">
+              <button type="button" class="comp-filter-pill active" data-filter="all">All (${totalCount})</button>
+              <button type="button" class="comp-filter-pill" data-filter="matched">✓ Matched (${matchedItems.length})</button>
+              ${partialItems.length > 0 ? `<button type="button" class="comp-filter-pill" data-filter="partial">⚡ Partial (${partialItems.length})</button>` : ''}
+              <button type="button" class="comp-filter-pill" data-filter="missing">✕ Gaps (${missingItems.length})</button>
+              <button type="button" class="comp-filter-pill" data-filter="required">★ Required (${requiredCount})</button>
+              <button type="button" class="comp-filter-pill" data-filter="preferred">☆ Preferred (${preferredCount})</button>
+            </div>
+          </div>
           <div class="competencies-grid">
             ${matchedHtml}
             ${partialHtml}
@@ -1136,9 +1260,397 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Bind interactive filtering of competency cards by status and importance
+  function bindCareerMatchFilters(container) {
+    if (!container) return;
+    const pills = container.querySelectorAll(".comp-filter-pill");
+    const cards = container.querySelectorAll(".competency-card");
+
+    pills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        pills.forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        const filter = pill.getAttribute("data-filter");
+
+        cards.forEach(card => {
+          const status = card.getAttribute("data-status");
+          const importance = card.getAttribute("data-importance");
+
+          let show = false;
+          if (filter === "all") {
+            show = true;
+          } else if (filter === "matched" && status === "matched") {
+            show = true;
+          } else if (filter === "partial" && status === "partial") {
+            show = true;
+          } else if (filter === "missing" && status === "missing") {
+            show = true;
+          } else if (filter === "required" && importance === "required") {
+            show = true;
+          } else if (filter === "preferred" && importance === "preferred") {
+            show = true;
+          }
+
+          card.style.display = show ? "flex" : "none";
+        });
+      });
+    });
+  }
+
+  // Helper to extract full CareerMatch analysis state from entry and DOM container
+  function buildAnalysisDataFromEntry(entry, container) {
+    const cm = (entry && entry.careerMatch) ? entry.careerMatch : {};
+    const customCompany = customCompanyInput ? customCompanyInput.value.trim() : "";
+    const customRole = customRoleInput ? customRoleInput.value.trim() : "";
+    const role = cm.role || customRole || "Internship Role";
+    const company = cm.company || customCompany || "Company";
+    const percent = entry.percent !== null && entry.percent !== undefined ? entry.percent : (cm.percent || 0);
+    const level = entry.level || cm.level || (percent >= 65 ? "good" : percent >= 35 ? "moderate" : "low");
+
+    // Capture live activity progress from container checkboxes
+    const activityProgress = {};
+    if (container) {
+      const chks = container.querySelectorAll(".roadmap-act-chk");
+      chks.forEach(chk => {
+        const key = chk.getAttribute("data-key");
+        if (key && chk.checked) {
+          activityProgress[key] = "done";
+        }
+      });
+    }
+
+    const matchedItems = (cm.matched && cm.matched.length > 0)
+      ? cm.matched
+      : (Array.isArray(entry.matched) ? entry.matched.map(s => ({ name: s, importance: "required", reason: "Demonstrated on resume" })) : []);
+
+    const partialItems = (cm.partial && cm.partial.length > 0)
+      ? cm.partial
+      : (Array.isArray(entry.partial) ? entry.partial.map(s => ({ name: s, importance: "required", reason: "Foundational skill" })) : []);
+
+    const missingItems = (cm.missing && cm.missing.length > 0)
+      ? cm.missing
+      : (Array.isArray(entry.missing) ? entry.missing.map(s => ({ name: s, importance: "required", reason: "Required competency" })) : []);
+
+    return {
+      id: cm.id || ("cm_analysis_" + Date.now()),
+      savedAt: cm.savedAt || new Date().toISOString(),
+      role,
+      company,
+      percent,
+      level,
+      scoreBreakdown: cm.scoreBreakdown || `Match % = (Matched + 0.5 × Partial) / Total Weighted Skills × 100`,
+      matched: matchedItems,
+      partial: partialItems,
+      missing: missingItems,
+      requiredSkills: cm.requiredSkills || [],
+      preferredSkills: cm.preferredSkills || [],
+      responsibilities: cm.responsibilities || [],
+      qualifications: cm.qualifications || [],
+      roadmap: cm.roadmap || [],
+      projects: cm.projects || [],
+      scamAssessment: entry.scamAssessment || { riskScore: 0, level: "low", reasons: [] },
+      activityProgress
+    };
+  }
+
+  // Bind PDF Download, Print Preview, and Save Progress buttons on CareerMatch cards
+  function bindCareerMatchActions(container, entry) {
+    if (!container) return;
+
+    const downloadBtn = container.querySelector(".btn-cm-download-pdf");
+    const printBtn = container.querySelector(".btn-cm-print-report");
+    const saveBtn = container.querySelector(".btn-cm-save-progress");
+
+    if (downloadBtn) {
+      downloadBtn.addEventListener("click", () => {
+        const data = buildAnalysisDataFromEntry(entry, container);
+        const downloader = typeof downloadCareerMatchPdf === "function"
+          ? downloadCareerMatchPdf
+          : (typeof window !== "undefined" && window.CareerMatchPdf && window.CareerMatchPdf.downloadCareerMatchPdf);
+        if (downloader) {
+          downloader(data);
+        } else {
+          console.error("PDF download function not available.");
+        }
+      });
+    }
+
+    if (printBtn) {
+      printBtn.addEventListener("click", () => {
+        const data = buildAnalysisDataFromEntry(entry, container);
+        const printer = typeof printCareerMatchReport === "function"
+          ? printCareerMatchReport
+          : (typeof window !== "undefined" && window.CareerMatchPdf && window.CareerMatchPdf.printCareerMatchReport);
+        if (printer) {
+          printer(data);
+        } else {
+          window.print();
+        }
+      });
+    }
+
+    if (saveBtn) {
+      saveBtn.addEventListener("click", () => {
+        const data = buildAnalysisDataFromEntry(entry, container);
+        if (typeof saveCareerAnalysis === "function") {
+          const saved = saveCareerAnalysis(data);
+          if (saved) {
+            const origHtml = saveBtn.innerHTML;
+            saveBtn.innerHTML = `
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Progress Saved!
+            `;
+            saveBtn.classList.add("btn-saved-success");
+            setTimeout(() => {
+              saveBtn.innerHTML = origHtml;
+              saveBtn.classList.remove("btn-saved-success");
+            }, 2500);
+            renderSavedAnalysesList();
+            updateSavedAnalysesBadges();
+            updateDashboardBanner();
+          }
+        }
+      });
+    }
+
+    const interviewBtn = container.querySelector(".btn-cm-mock-interview");
+    if (interviewBtn) {
+      interviewBtn.addEventListener("click", () => {
+        const data = buildAnalysisDataFromEntry(entry, container);
+        const weakTopics = (data.missing || []).map(m => (typeof m === 'object' ? (m.name || m.skill) : m));
+        try {
+          sessionStorage.setItem("internpilot_interview_prefill", JSON.stringify({
+            role: data.role,
+            company: data.company,
+            resumeText: resumeInput ? resumeInput.value : "",
+            weakTopics
+          }));
+        } catch {}
+        window.location.href = "interview.html";
+      });
+    }
+  }
+
+  // Open and restore a saved CareerMatch analysis into the active Review Desk
+  function openSavedAnalysis(id) {
+    const item = typeof getSavedAnalysis === "function" ? getSavedAnalysis(id) : null;
+    if (!item) return;
+
+    // Restore activity progress keys into localStorage
+    if (item.activityProgress && typeof localStorage !== "undefined") {
+      Object.keys(item.activityProgress).forEach(k => {
+        if (item.activityProgress[k] === "done") {
+          localStorage.setItem(k, "done");
+        }
+      });
+    }
+
+    // Clear empty state in live log
+    const emptyState = liveLog.querySelector(".log-empty-state");
+    if (emptyState) emptyState.remove();
+
+    const isHalt = item.percent < 30;
+    const entry = {
+      type: isHalt ? "match-halt" : "match-success",
+      title: `CareerMatch AI: about ${item.percent}% match (${(item.level || "moderate").toUpperCase()}) [Restored]`,
+      percent: item.percent,
+      level: item.level,
+      matched: item.matched,
+      partial: item.partial,
+      missing: item.missing,
+      careerMatch: item,
+      scamAssessment: item.scamAssessment,
+      decisionText: `Restored saved analysis for ${item.role} at ${item.company} (${item.percent}% match).`
+    };
+
+    const stepDiv = document.createElement("div");
+    stepDiv.className = "log-step";
+    stepDiv.innerHTML = renderCareerMatchCard(entry);
+    bindRoadmapCheckboxes(stepDiv);
+    bindCareerMatchFilters(stepDiv);
+    bindCareerMatchActions(stepDiv, entry);
+        if (entry.careerMatch) {
+          syncLearningRoadmapSection(entry.careerMatch, entry.role || entry.title);
+        }
+
+    if (isHalt) {
+      const draftBtn = stepDiv.querySelector(".btn-draft-anyway");
+      if (draftBtn) {
+        draftBtn.addEventListener("click", () => {
+          draftBtn.disabled = true;
+          draftBtn.textContent = "Drafting...";
+          addLogEntry({
+            type: "decision",
+            text: "User chose to draft email anyway from restored analysis."
+          });
+        });
+      }
+    }
+
+    liveLog.appendChild(stepDiv);
+    liveLog.scrollTop = liveLog.scrollHeight;
+
+    // Update verdict banner
+    if (typeof renderVerdict === "function") {
+      renderVerdict(item.scamAssessment?.level || "low", item.scamAssessment?.riskScore || 0, item.scamAssessment?.reasons || []);
+    }
+
+    // Scroll review desk smoothly into view
+    stepDiv.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  // Render the "My Saved Analyses" responsive cards list
+  function renderSavedAnalysesList() {
+    const listContainer = document.getElementById("saved-analyses-container");
+    const badge = document.getElementById("saved-analyses-badge");
+    const navCount = document.getElementById("nav-saved-count");
+    const dashCount = document.getElementById("dash-saved-analyses");
+
+    if (!listContainer) return;
+    const analyses = typeof loadSavedAnalyses === "function" ? loadSavedAnalyses() : [];
+
+    const countText = `${analyses.length} saved`;
+    if (badge) badge.textContent = countText;
+    if (navCount) navCount.textContent = analyses.length;
+    if (dashCount) dashCount.textContent = analyses.length;
+
+    document.querySelectorAll(".cm-saved-count-inline").forEach(el => {
+      el.textContent = analyses.length;
+    });
+
+    if (analyses.length === 0) {
+      listContainer.innerHTML = `
+        <div class="saved-empty-state">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 0.5rem; opacity: 0.6;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <div>No saved analyses yet.</div>
+          <div style="font-size: 0.8rem; color: var(--text-faint); margin-top: 0.25rem;">Run an analysis above and click <strong>"Save Progress"</strong> to keep your CareerMatch results and roadmap milestones here.</div>
+        </div>
+      `;
+      return;
+    }
+
+    listContainer.innerHTML = analyses.map(item => {
+      const prog = typeof calculateRoadmapProgress === "function" ? calculateRoadmapProgress(item) : { completed: 0, total: 0, percent: 0 };
+      const role = item.role || "Internship Role";
+      const company = item.company || "Company";
+      const percent = item.percent !== undefined && item.percent !== null ? item.percent : 0;
+      const dateFormatted = item.savedAt ? new Date(item.savedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "Recently";
+
+      let badgeClass = "badge-danger";
+      if (percent >= 65) badgeClass = "badge-success";
+      else if (percent >= 35) badgeClass = "badge-warning";
+
+      const matchedCount = (item.matched || []).length;
+      const partialCount = (item.partial || []).length;
+      const missingCount = (item.missing || []).length;
+
+      return `
+        <div class="saved-analysis-card" data-id="${escapeHtml(item.id)}">
+          <div class="saved-card-header">
+            <div class="saved-card-title-group">
+              <h4 class="saved-card-role">${escapeHtml(role)}</h4>
+              <span class="saved-card-company">${escapeHtml(company)}</span>
+            </div>
+            <span class="badge ${badgeClass}">${percent}% Match</span>
+          </div>
+
+          <div class="saved-card-meta-row">
+            <span class="saved-card-date">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Saved ${escapeHtml(dateFormatted)}
+            </span>
+            <span class="saved-card-counts">
+              <span class="count-tag-matched">✓ ${matchedCount}</span>
+              ${partialCount > 0 ? `<span class="count-tag-partial">⚡ ${partialCount}</span>` : ''}
+              <span class="count-tag-missing">✕ ${missingCount}</span>
+            </span>
+          </div>
+
+          <!-- Roadmap Progress Tracker -->
+          <div class="saved-card-progress-box">
+            <div class="saved-progress-label-row">
+              <span class="saved-progress-title">Roadmap Milestones:</span>
+              <span class="saved-progress-value">${prog.completed} / ${prog.total} completed (${prog.percent}%)</span>
+            </div>
+            <div class="saved-progress-bar-bg">
+              <div class="saved-progress-bar-fill" style="width: ${prog.percent}%;"></div>
+            </div>
+          </div>
+
+          <!-- Card Actions -->
+          <div class="saved-card-actions">
+            <button type="button" class="btn-primary btn-saved-open" data-id="${escapeHtml(item.id)}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              Resume Roadmap
+            </button>
+            <button type="button" class="btn-secondary btn-saved-pdf" data-id="${escapeHtml(item.id)}" title="Download PDF Report">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              PDF
+            </button>
+            <button type="button" class="btn-secondary btn-saved-delete danger-hover" data-id="${escapeHtml(item.id)}" title="Delete saved analysis">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    listContainer.querySelectorAll(".btn-saved-open").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        openSavedAnalysis(id);
+      });
+    });
+
+    listContainer.querySelectorAll(".btn-saved-pdf").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        const item = typeof getSavedAnalysis === "function" ? getSavedAnalysis(id) : null;
+        if (item) {
+          const downloader = typeof downloadCareerMatchPdf === "function"
+            ? downloadCareerMatchPdf
+            : (typeof window !== "undefined" && window.CareerMatchPdf && window.CareerMatchPdf.downloadCareerMatchPdf);
+          if (downloader) downloader(item);
+        }
+      });
+    });
+
+    listContainer.querySelectorAll(".btn-saved-delete").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        const item = typeof getSavedAnalysis === "function" ? getSavedAnalysis(id) : null;
+        const role = item ? item.role : "this analysis";
+        if (window.confirm(`Are you sure you want to delete the saved CareerMatch analysis for "${role}"?`)) {
+          if (typeof deleteSavedAnalysis === "function") {
+            deleteSavedAnalysis(id);
+            renderSavedAnalysesList();
+            updateSavedAnalysesBadges();
+            updateDashboardBanner();
+          }
+        }
+      });
+    });
+  }
+
+  function updateSavedAnalysesBadges() {
+    const list = typeof loadSavedAnalyses === "function" ? loadSavedAnalyses() : [];
+    const navCount = document.getElementById("nav-saved-count");
+    const dashCount = document.getElementById("dash-saved-analyses");
+    const badge = document.getElementById("saved-analyses-badge");
+
+    if (navCount) navCount.textContent = list.length;
+    if (dashCount) dashCount.textContent = list.length;
+    if (badge) badge.textContent = `${list.length} saved`;
+    document.querySelectorAll(".cm-saved-count-inline").forEach(el => {
+      el.textContent = list.length;
+    });
+  }
+
       case "match-halt": {
         stepDiv.innerHTML = renderCareerMatchCard(entry);
         bindRoadmapCheckboxes(stepDiv);
+        bindCareerMatchFilters(stepDiv);
+        bindCareerMatchActions(stepDiv, entry);
 
         const draftBtn = stepDiv.querySelector(".btn-draft-anyway");
         if (draftBtn) {
@@ -1167,6 +1679,8 @@ document.addEventListener("DOMContentLoaded", () => {
       case "match-success": {
         stepDiv.innerHTML = renderCareerMatchCard(entry);
         bindRoadmapCheckboxes(stepDiv);
+        bindCareerMatchFilters(stepDiv);
+        bindCareerMatchActions(stepDiv, entry);
         break;
       }
 
@@ -1383,6 +1897,784 @@ document.addEventListener("DOMContentLoaded", () => {
       isAgentRunning = false;
       runBtn.disabled = false;
       logStatusText.textContent = "Analysis complete";
+      updateDashboardBanner();
+      if (typeof renderSavedAnalysesList === "function") {
+        renderSavedAnalysesList();
+      }
     }
+  });
+
+  // ========================================================
+  // ORIGINAL INTERNSHIP SOURCE FINDER CLIENT CONTROLLER
+  // ========================================================
+  const sourceUrlInput = document.getElementById("source-url-input");
+  const btnFindSource = document.getElementById("btn-find-source");
+  const sourceStepper = document.getElementById("source-stepper");
+  const sourceFinderResult = document.getElementById("source-finder-result");
+  const sampleUrlBtns = document.querySelectorAll(".btn-sample-url");
+
+  function setStepperStep(activeStepIndex) {
+    if (!sourceStepper) return;
+    sourceStepper.style.display = "flex";
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById(`sf-step-${i}`);
+      if (!el) continue;
+      el.classList.remove("active", "completed");
+      if (i < activeStepIndex) el.classList.add("completed");
+      else if (i === activeStepIndex) el.classList.add("active");
+    }
+  }
+
+  function renderSourceFinderResult(res, redirectData = null) {
+    if (!sourceFinderResult) return;
+    sourceFinderResult.style.display = "block";
+
+    if (!res || !res.state) {
+      sourceFinderResult.innerHTML = `
+        <div class="source-result-box source-result-state-D">
+          <div class="source-result-badge-row">
+            <span class="source-badge source-badge-unable">Unable to Verify</span>
+          </div>
+          <p>Verification could not be completed. Please ensure the target URL is valid and accessible.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const state = res.state;
+    const info = res.submittedInfo || res.extractedJobInfo || {};
+    const official = res.officialListing || {};
+    const evidence = res.evidence || {};
+
+    // -------------------------------------------------------------
+    // DEDICATED ERROR STATES (Invalid URL, Empty Input, Server Error)
+    // -------------------------------------------------------------
+    if (state === "INVALID_URL" || state === "SERVER_ERROR") {
+      sourceFinderResult.innerHTML = `
+        <div class="source-result-box source-result-state-D" style="border-left: 3px solid #ef4444;">
+          <div class="source-result-badge-row">
+            <span class="source-badge" style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35);">
+              ✕ ${escapeHtml(res.label || (state === "INVALID_URL" ? "Invalid URL" : "Server Error"))}
+            </span>
+          </div>
+          <div style="margin-top: 0.6rem;">
+            <strong style="color: #f1f5f9; font-size: 0.95rem;">${escapeHtml(res.error || "Action required")}</strong>
+            <p style="margin: 0.35rem 0 0 0; color: #94a3b8; font-size: 0.85rem;">
+              ${escapeHtml(evidence.explanation || "Please check the entered URL and try again.")}
+            </p>
+            ${evidence.sourceUrl ? `<div style="margin-top: 0.4rem; font-size: 0.8rem; color: #64748b; word-break: break-all;">Input: <code>${escapeHtml(evidence.sourceUrl)}</code></div>` : ""}
+            <div style="margin-top: 0.75rem;">
+              <button type="button" class="btn-secondary" onclick="var p=document.getElementById('posting'); if(p) p.scrollIntoView({ behavior: 'smooth' });">
+                Paste Job Description Manually
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    const searchLinks = res.searchLinks || {
+      google: `https://www.google.com/search?q=${encodeURIComponent(`"${info.companyName || ''}" "${info.jobTitle || ''}" careers`)}`,
+      bing: `https://www.bing.com/search?q=${encodeURIComponent(`"${info.companyName || ''}" "${info.jobTitle || ''}" careers`)}`
+    };
+    const isDemoModeResult = Boolean(res.isDemo || (demoModeToggle && demoModeToggle.checked));
+    const roleName = official.jobTitle || info.jobTitle || "Internship Role";
+    const compName = official.companyName || info.companyName || "Organization";
+
+    // -------------------------------------------------------------
+    // REDIRECT CHAIN INSPECTOR CARD HTML
+    // -------------------------------------------------------------
+    let redirectHtml = "";
+    if (redirectData && redirectData.ok && redirectData.chain && redirectData.chain.length > 0) {
+      const chain = redirectData.chain;
+      const finalDomain = redirectData.finalDomain || (chain[chain.length - 1] && chain[chain.length - 1].domain) || "";
+      const rawComp = (compName || "").toLowerCase().trim();
+      const normComp = rawComp.replace(/[^a-z0-9]/g, '');
+      const normFinal = (finalDomain || "").toLowerCase();
+      const domainContainsCompany = normComp.length >= 3 && (normFinal.includes(normComp) || rawComp.includes(normFinal.split('.')[0]));
+
+      const hopsHtml = chain.map((hop, idx) => {
+        const isFinal = idx === chain.length - 1;
+        const is3xx = hop.status >= 300 && hop.status < 400;
+        const badgeClass = is3xx ? 'status-3xx' : 'status-2xx';
+        return `
+          <span class="redirect-hop-node ${isFinal ? 'final-hop' : ''}">
+            <span class="hop-domain">${escapeHtml(hop.domain)}</span>
+            <span class="hop-status-badge ${badgeClass}">${hop.status}</span>
+          </span>
+          ${!isFinal ? `<span class="redirect-arrow">→</span>` : ''}
+        `;
+      }).join('');
+
+      redirectHtml = `
+        <div class="redirect-inspector-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <strong style="font-size: 0.85rem; color: #5eead4; display: flex; align-items: center; gap: 0.4rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Redirect Inspector
+            </strong>
+            <span style="font-size: 0.74rem; color: #94a3b8;">${chain.length - 1} redirect hop(s)</span>
+          </div>
+          <div class="redirect-chain-flow">
+            ${hopsHtml}
+          </div>
+          <div class="redirect-summary-text">
+            This link ends at <strong>${escapeHtml(finalDomain)}</strong>. A redirect shows where a link goes, not who published the job first.
+          </div>
+          ${domainContainsCompany ? `
+            <div class="redirect-company-match">
+              The final domain contains the company name. This does not prove it is the official site.
+            </div>
+          ` : ''}
+          <span class="redirect-js-note">(Note: JavaScript-based redirects are not detected)</span>
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------
+    // CASE 1: ASSISTED SOURCE VERIFICATION MODE (No API key needed)
+    // -------------------------------------------------------------
+    if (state === "ASSISTED_READY") {
+      sourceFinderResult.innerHTML = `
+        <div class="source-result-box assisted-mode-box">
+          <div class="source-result-badge-row">
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <span class="source-badge source-badge-assisted">Assisted Verification Mode</span>
+              <span class="source-badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.35);">No API Key Required</span>
+              ${isDemoModeResult ? `<span class="source-badge" style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">⚡ Demo Mode</span>` : ""}
+            </div>
+          </div>
+
+          ${redirectHtml}
+
+          <div class="source-result-title">${escapeHtml(roleName)} at ${escapeHtml(compName)}</div>
+
+          <div class="source-result-meta">
+            ${info.location ? `<span><strong>Location:</strong> ${escapeHtml(info.location)}</span>` : ""}
+            ${info.stipend ? `<span><strong>Stipend:</strong> ${escapeHtml(info.stipend)}</span>` : ""}
+            ${info.duration ? `<span><strong>Duration:</strong> ${escapeHtml(info.duration)}</span>` : ""}
+            ${info.jobRefId ? `<span><strong>Job Ref ID:</strong> ${escapeHtml(info.jobRefId)}</span>` : ""}
+            ${info.requiredSkills && info.requiredSkills.length > 0 ? `<span><strong>Skills:</strong> ${escapeHtml(info.requiredSkills.join(", "))}</span>` : ""}
+          </div>
+
+          <div class="assisted-explanation-card">
+            <div class="assisted-notice-icon" aria-hidden="true">ℹ</div>
+            <div>
+              <strong>Student-Guided Web Verification:</strong>
+              <p style="margin: 0.3rem 0 0 0;">
+                InternPilot has extracted the job details above and prepared direct search queries. Clicking <strong>Search Official Website</strong> opens the query in your browser so you can locate the company's official posting directly.
+              </p>
+              <div class="assisted-disclaimer-subtext">
+                Note: Search results are opened and reviewed by you. InternPilot does not independently discover, verify, or invent external links.
+              </div>
+            </div>
+          </div>
+
+          <!-- Direct Search Actions -->
+          <div class="source-actions-row">
+            <a href="${escapeHtml(searchLinks.google)}" target="_blank" rel="noopener noreferrer" class="btn-search-official" id="btn-search-official-website">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Search Official Website (Google)
+            </a>
+            <a href="${escapeHtml(searchLinks.bing)}" target="_blank" rel="noopener noreferrer" class="btn-search-official-secondary" id="btn-search-bing">
+              Search via Bing
+            </a>
+          </div>
+
+          <!-- Assisted Comparison Section -->
+          <div class="assisted-compare-section">
+            <h4 style="margin: 1.25rem 0 0.4rem 0; font-size: 0.95rem; color: #e2e8f0; font-weight: 700;">Compare With Official Company Listing</h4>
+            <p style="font-size: 0.85rem; color: #94a3b8; margin: 0 0 0.75rem 0;">
+              Found the posting on the company's official website? Paste the careers URL below to compare role title, requirements, location, and compensation:
+            </p>
+            <div class="assisted-input-group">
+              <input
+                type="url"
+                id="assisted-official-url-input"
+                class="source-url-input assisted-url-input"
+                placeholder="Paste official company careers URL (e.g. https://careers.company.com/job/123)..."
+                aria-label="Official company careers URL">
+              <button type="button" id="btn-compare-assisted" class="btn-primary btn-compare-assisted">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                Compare With Official Posting
+              </button>
+            </div>
+
+            <!-- Quick Samples for Easy Testing -->
+            <div class="source-sample-row" style="margin-top: 0.6rem;">
+              <span class="source-sample-label">Sample official URLs:</span>
+              <button type="button" class="btn-sample-official-url" data-url="https://careers.apexcloud.io/internships/junior-web-dev">Apex Official (Match)</button>
+              <button type="button" class="btn-sample-official-url" data-url="https://vanguarddatalabs.com/careers/frontend-engineer-junior">Vanguard Official (Possible)</button>
+              <button type="button" class="btn-sample-official-url" data-url="https://differsite.com/careers/marketing-manager">Different Role (Differ)</button>
+            </div>
+
+            <div id="assisted-comparison-output" style="display: none; margin-top: 1rem;"></div>
+          </div>
+        </div>
+      `;
+
+      attachAssistedModeListeners(res.submittedUrl || sourceUrlInput?.value || "");
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // CASE 2: AUTOMATED VERIFICATION / DEMO SCENARIO STATES
+    // -------------------------------------------------------------
+    let stateClass = "source-result-state-D";
+    let badgeClass = "source-badge-unable";
+    let badgeText = "Unable to Verify";
+
+    if (state === "OFFICIAL_LISTING_FOUND") {
+      stateClass = "source-result-state-A";
+      badgeClass = "source-badge-official";
+      badgeText = "✓ Official Listing Found";
+    } else if (state === "POSSIBLE_OFFICIAL_MATCH") {
+      stateClass = "source-result-state-B";
+      badgeClass = "source-badge-possible";
+      badgeText = "⚡ Possible Official Match";
+    } else if (state === "THIRD_PARTY_ONLY") {
+      stateClass = "source-result-state-C";
+      badgeClass = "source-badge-thirdparty";
+      badgeText = "ℹ Third-Party Listing Only";
+    }
+
+    let diffTableHtml = "";
+    if (evidence.differingFields && evidence.differingFields.length > 0) {
+      diffTableHtml = `
+        <table class="diff-table">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Submitted Posting</th>
+              <th>Official Website Listing</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${evidence.differingFields.map(d => `
+              <tr>
+                <td><strong>${escapeHtml(d.field)}</strong></td>
+                <td class="submitted-col">${escapeHtml(d.submitted || "Not specified")}</td>
+                <td class="official-col">${escapeHtml(d.official || "Not specified")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    let searchWarningHtml = "";
+    if (res.searchConfigured === false) {
+      searchWarningHtml = `
+        <div class="search-warning-banner">
+          <strong>Search Provider Notice:</strong> ${escapeHtml(res.searchConfigMessage || "No live search API configured.")}
+        </div>
+      `;
+    }
+
+    sourceFinderResult.innerHTML = `
+      <div class="source-result-box ${stateClass}">
+        <div class="source-result-badge-row">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <span class="source-badge ${badgeClass}">${badgeText}</span>
+            ${isDemoModeResult ? `<span class="source-badge" style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">⚡ Demo Mode (Sample)</span>` : ""}
+          </div>
+          ${res.confidenceScore ? `<span style="font-size: 0.8rem; color: #94a3b8;">Match Confidence: <strong>${res.confidenceScore}%</strong></span>` : ""}
+        </div>
+
+        ${redirectHtml}
+
+        <div class="source-result-title">${escapeHtml(roleName)} at ${escapeHtml(compName)}</div>
+
+        <div class="source-result-meta">
+          ${info.location || official.location ? `<span><strong>Location:</strong> ${escapeHtml(official.location || info.location)}</span>` : ""}
+          ${info.stipend || official.stipend ? `<span><strong>Stipend:</strong> ${escapeHtml(official.stipend || info.stipend)}</span>` : ""}
+          ${info.jobRefId ? `<span><strong>Job Ref ID:</strong> ${escapeHtml(info.jobRefId)}</span>` : ""}
+          ${official.sourceType ? `<span><strong>Source Type:</strong> ${escapeHtml(official.sourceType)}</span>` : ""}
+        </div>
+
+        <div class="source-evidence-card">
+          <strong>Verification Evidence:</strong>
+          <p style="margin: 0.35rem 0 0 0;">${escapeHtml(evidence.explanation || "Direct comparison completed across submitted posting and verified domains.")}</p>
+          ${diffTableHtml}
+          ${isDemoModeResult ? `<div style="margin-top: 0.5rem; font-size: 0.78rem; color: #fbbf24;">⚡ <strong>Demonstration Result:</strong> Based on verified ground-truth sample data for offline audit.</div>` : ""}
+          ${evidence.sourceUrl ? `<div style="margin-top: 0.5rem; word-break: break-all; font-size: 0.8rem; color: #94a3b8;">Source: <code>${escapeHtml(evidence.sourceUrl)}</code></div>` : ""}
+        </div>
+
+        ${searchWarningHtml}
+
+        <div class="source-actions-row">
+          ${official.url ? `
+            <a href="${escapeHtml(official.url)}" target="_blank" rel="noopener noreferrer" class="btn-view-official">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View Original Posting
+            </a>
+          ` : ""}
+          <a href="${escapeHtml(searchLinks.google)}" target="_blank" rel="noopener noreferrer" class="btn-search-official" id="btn-search-official-website">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Search Official Website
+          </a>
+          <button type="button" class="btn-analyse-internship" id="btn-analyse-found-internship">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Analyse This Internship
+          </button>
+        </div>
+
+        <!-- Assisted Comparison Option in standard view -->
+        <div class="assisted-compare-section">
+          <h4 style="margin: 1rem 0 0.4rem 0; font-size: 0.92rem; color: #e2e8f0; font-weight: 700;">Cross-Check With Candidate Careers URL</h4>
+          <div class="assisted-input-group">
+            <input
+              type="url"
+              id="assisted-official-url-input"
+              class="source-url-input assisted-url-input"
+              placeholder="Paste candidate company careers URL to cross-check..."
+              aria-label="Candidate company careers URL">
+            <button type="button" id="btn-compare-assisted" class="btn-primary btn-compare-assisted">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+              Compare With Official Posting
+            </button>
+          </div>
+          <div id="assisted-comparison-output" style="display: none; margin-top: 1rem;"></div>
+        </div>
+      </div>
+    `;
+
+    attachAssistedModeListeners(res.submittedUrl || sourceUrlInput?.value || "");
+    wireAnalyseButton(official.jobTitle || info.jobTitle, official.companyName || info.companyName, official.location || info.location, official.stipend || info.stipend, info.requiredSkills, info.description);
+  }
+
+  function wireAnalyseButton(title, company, location, stipend, skills, description) {
+    const analyseBtn = document.getElementById("btn-analyse-found-internship");
+    if (!analyseBtn) return;
+    analyseBtn.addEventListener("click", () => {
+      if (customRoleInput && title) customRoleInput.value = title;
+      if (customCompanyInput && company) customCompanyInput.value = company;
+      if (postingInput) {
+        const combinedDesc = [
+          `Role: ${title || "Intern"}`,
+          `Company: ${company || "Organization"}`,
+          location ? `Location: ${location}` : "",
+          stipend ? `Stipend: ${stipend}` : "",
+          skills && skills.length > 0 ? `Required Skills: ${skills.join(", ")}` : "",
+          description ? `\nJob Description:\n${description}` : ""
+        ].filter(Boolean).join("\n");
+        postingInput.value = combinedDesc;
+      }
+      const postingCard = document.getElementById("posting");
+      if (postingCard) postingCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (runBtn && !isAgentRunning) {
+        setTimeout(() => runBtn.click(), 600);
+      }
+    });
+  }
+
+  function attachAssistedModeListeners(submittedUrl) {
+    const assistedInput = document.getElementById("assisted-official-url-input");
+    const compareBtn = document.getElementById("btn-compare-assisted");
+    const sampleBtns = document.querySelectorAll(".btn-sample-official-url");
+
+    sampleBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (assistedInput) {
+          assistedInput.value = btn.getAttribute("data-url") || "";
+          assistedInput.focus();
+        }
+      });
+    });
+
+    if (compareBtn) {
+      compareBtn.addEventListener("click", async () => {
+        const officialUrl = assistedInput?.value?.trim();
+        if (!officialUrl) {
+          alert("Please enter a candidate company careers URL to compare.");
+          if (assistedInput) assistedInput.focus();
+          return;
+        }
+
+        const outContainer = document.getElementById("assisted-comparison-output");
+        if (outContainer) {
+          outContainer.style.display = "block";
+          outContainer.innerHTML = `<div style="padding: 1rem; color: #94a3b8; font-size: 0.88rem;">Fetching and comparing job details safely...</div>`;
+        }
+
+        compareBtn.disabled = true;
+        compareBtn.innerHTML = `<span>Comparing...</span>`;
+
+        try {
+          const isDemo = Boolean(demoModeToggle && demoModeToggle.checked);
+          const compResp = await fetch("/api/source-finder/assisted-compare", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              submittedUrl: submittedUrl || sourceUrlInput?.value?.trim() || "",
+              officialUrl,
+              isDemo
+            })
+          });
+
+          const compData = await compResp.json();
+          renderAssistedComparisonResult(compData);
+        } catch (err) {
+          console.error("Assisted compare error:", err);
+          if (outContainer) {
+            outContainer.innerHTML = `
+              <div class="source-result-box source-result-state-D" style="margin-top: 0.5rem;">
+                <div class="source-result-badge-row">
+                  <span class="source-badge source-badge-unable">✕ Unable to Compare</span>
+                </div>
+                <p style="font-size: 0.85rem; color: #cbd5e1;">Network error occurred during assisted comparison. Please check URLs and retry.</p>
+              </div>
+            `;
+          }
+        } finally {
+          compareBtn.disabled = false;
+          compareBtn.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+            Compare With Official Posting
+          `;
+        }
+      });
+    }
+  }
+
+  function renderAssistedComparisonResult(data) {
+    const outContainer = document.getElementById("assisted-comparison-output");
+    if (!outContainer) return;
+    outContainer.style.display = "block";
+
+    const state = data.state || "UNABLE_TO_COMPARE";
+    const label = data.label || "Unable to Compare";
+    const evidence = data.evidence || {};
+    const matching = data.matchingDetails || [];
+    const diffs = data.differingFields || evidence.differingFields || [];
+    const official = data.officialListing || {};
+    const submitted = data.submittedInfo || {};
+    const isDemo = Boolean(data.isDemo || (demoModeToggle && demoModeToggle.checked));
+
+    let stateClass = "source-result-state-D";
+    let badgeClass = "source-badge-unable";
+
+    if (state === "DETAILS_MATCH") {
+      stateClass = "source-result-state-A";
+      badgeClass = "source-badge-match";
+    } else if (state === "POSSIBLE_MATCH") {
+      stateClass = "source-result-state-B";
+      badgeClass = "source-badge-possible";
+    } else if (state === "DETAILS_DIFFER") {
+      stateClass = "source-result-state-D";
+      badgeClass = "source-badge-differ";
+    }
+
+    let diffHtml = "";
+    if (diffs.length > 0) {
+      diffHtml = `
+        <table class="diff-table" style="margin-top: 0.6rem;">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Submitted 3rd-Party Posting</th>
+              <th>Student-Provided Official Listing</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${diffs.map(d => `
+              <tr>
+                <td><strong>${escapeHtml(d.field)}</strong></td>
+                <td class="submitted-col">${escapeHtml(d.submitted || "Not specified")}</td>
+                <td class="official-col">${escapeHtml(d.official || "Not specified")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    let matchHtml = "";
+    if (matching.length > 0) {
+      matchHtml = `
+        <div style="margin-top: 0.6rem;">
+          <strong style="color: #34d399; font-size: 0.85rem;">Matching Details:</strong>
+          <ul class="assisted-matching-list">
+            ${matching.map(m => `<li>✓ ${escapeHtml(m)}</li>`).join("")}
+          </ul>
+        </div>
+      `;
+    }
+
+    outContainer.innerHTML = `
+      <div class="source-result-box ${stateClass}" style="margin-top: 0.5rem;">
+        <div class="source-result-badge-row">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <span class="source-badge ${badgeClass}">${escapeHtml(label)}</span>
+            ${isDemo ? `<span class="source-badge" style="background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">⚡ Demo Mode</span>` : ""}
+          </div>
+          ${data.confidenceScore ? `<span style="font-size: 0.8rem; color: #94a3b8;">Match Confidence: <strong>${data.confidenceScore}%</strong></span>` : ""}
+        </div>
+
+        <div class="source-evidence-card">
+          <strong>Comparison Findings:</strong>
+          <p style="margin: 0.35rem 0 0 0;">${escapeHtml(evidence.explanation || "Detailed comparison between submitted posting and candidate official listing.")}</p>
+          ${matchHtml}
+          ${diffHtml}
+          <div style="margin-top: 0.65rem; padding: 0.5rem 0.65rem; background: rgba(0,0,0,0.3); border-left: 3px solid #38bdf8; font-size: 0.78rem; color: #94a3b8;">
+            <strong>Assisted Comparison Notice:</strong> Comparison performed between student-supplied third-party posting and candidate company listing. InternPilot did not independently discover this official listing.
+          </div>
+        </div>
+
+        <div class="source-actions-row">
+          <button type="button" class="btn-analyse-internship" id="btn-analyse-assisted-internship">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Analyse This Internship
+          </button>
+        </div>
+      </div>
+    `;
+
+    const analyseAssistedBtn = document.getElementById("btn-analyse-assisted-internship");
+    if (analyseAssistedBtn) {
+      analyseAssistedBtn.addEventListener("click", () => {
+        const title = official.jobTitle || submitted.jobTitle || "Intern";
+        const company = official.companyName || submitted.companyName || "Organization";
+        const location = official.location || submitted.location || "";
+        const stipend = official.stipend || submitted.stipend || "";
+        const skills = submitted.requiredSkills || [];
+        const description = submitted.description || "";
+
+        if (customRoleInput && title) customRoleInput.value = title;
+        if (customCompanyInput && company) customCompanyInput.value = company;
+        if (postingInput) {
+          const combinedDesc = [
+            `Role: ${title}`,
+            `Company: ${company}`,
+            location ? `Location: ${location}` : "",
+            stipend ? `Stipend: ${stipend}` : "",
+            skills && skills.length > 0 ? `Required Skills: ${skills.join(", ")}` : "",
+            description ? `\nJob Description:\n${description}` : ""
+          ].filter(Boolean).join("\n");
+          postingInput.value = combinedDesc;
+        }
+
+        const postingCard = document.getElementById("posting");
+        if (postingCard) {
+          postingCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        if (runBtn && !isAgentRunning) {
+          setTimeout(() => runBtn.click(), 600);
+        }
+      });
+    }
+  }
+
+  async function executeSourceSearch(targetUrl) {
+    if (!targetUrl || !targetUrl.trim()) {
+      renderSourceFinderResult({
+        state: "INVALID_URL",
+        label: "URL Required",
+        error: "Please enter an internship posting URL to find its original source.",
+        evidence: {
+          explanation: "Input field was empty. Paste an internship link from LinkedIn, Internshala, Indeed, or any career portal."
+        }
+      });
+      if (sourceUrlInput) sourceUrlInput.focus();
+      return;
+    }
+
+    const trimmedUrl = targetUrl.trim();
+    if (!/^https?:\/\//i.test(trimmedUrl)) {
+      renderSourceFinderResult({
+        state: "INVALID_URL",
+        label: "Invalid URL Protocol",
+        error: "Please enter a valid web URL starting with http:// or https://",
+        evidence: {
+          sourceUrl: trimmedUrl,
+          explanation: "Web addresses must start with http:// or https://. Example: https://www.linkedin.com/jobs/view/123456"
+        }
+      });
+      if (sourceUrlInput) sourceUrlInput.focus();
+      return;
+    }
+
+    if (btnFindSource) {
+      btnFindSource.disabled = true;
+      btnFindSource.innerHTML = `
+        <span class="spinner-inline" style="display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,0.2); border-top-color:#042f2e; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
+        <span>Checking redirects...</span>
+      `;
+    }
+
+    // Visible in-progress state immediately
+    if (sourceFinderResult) {
+      sourceFinderResult.style.display = "block";
+      sourceFinderResult.innerHTML = `
+        <div class="source-result-box" style="border: 1px dashed rgba(45, 212, 191, 0.4); background: rgba(14, 20, 36, 0.65); padding: 1.25rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class="pulse-dot" style="width: 10px; height: 10px;"></span>
+            <span id="sf-live-progress-msg" style="font-size: 0.9rem; font-weight: 600; color: #5eead4;">Checking where this link goes...</span>
+          </div>
+          <p style="margin: 0.4rem 0 0 0; font-size: 0.82rem; color: #94a3b8;">Following redirects hop-by-hop under SSRF protection to detect the final domain.</p>
+        </div>
+      `;
+    }
+
+    // Step 1: Checking redirects
+    setStepperStep(1);
+
+    const isDemo = Boolean(demoModeToggle && demoModeToggle.checked);
+
+    // Call Redirect Inspector
+    let redirectData = null;
+    try {
+      const redirectResp = await fetch("/api/redirect-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmedUrl, isDemo })
+      });
+      redirectData = await redirectResp.json();
+    } catch (netErr) {
+      console.warn("Redirect check network error:", netErr);
+      redirectData = { ok: false, code: "unreachable", message: "Network connection failed while inspecting redirects." };
+    }
+
+    if (!redirectData || !redirectData.ok) {
+      const errorCode = (redirectData && redirectData.code) || "unreachable";
+      const errorMsg = (redirectData && redirectData.message) || "Failed to inspect link redirects.";
+      const errorTitles = {
+        blocked_destination: "Blocked Destination Address",
+        redirect_loop: "Redirect Loop Detected",
+        too_many_redirects: "Too Many Redirects",
+        timeout: "Redirect Inspection Timed Out",
+        invalid_url: "Invalid URL Address",
+        rate_limited: "Rate Limit Exceeded",
+        unreachable: "Destination Unreachable"
+      };
+
+      renderSourceFinderResult({
+        state: "INVALID_URL",
+        label: errorTitles[errorCode] || "Redirect Check Failed",
+        error: errorMsg,
+        evidence: {
+          sourceUrl: trimmedUrl,
+          explanation: `Link analysis could not complete (${errorCode}). A redirect shows where a link goes, not who published the job first. You can still paste the job details directly to run CareerMatch.`
+        }
+      });
+      return;
+    }
+
+    // Step 2: Extracting job information
+    setStepperStep(2);
+    const progressMsg = document.getElementById("sf-live-progress-msg");
+    if (progressMsg) progressMsg.textContent = "Extracting job title, company & requirements...";
+    if (btnFindSource) {
+      btnFindSource.innerHTML = `
+        <span class="spinner-inline" style="display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,0.2); border-top-color:#042f2e; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
+        <span>Extracting info...</span>
+      `;
+    }
+    await new Promise(r => setTimeout(r, 300));
+
+    // Step 3: Searching
+    setStepperStep(3);
+    if (progressMsg) progressMsg.textContent = "Checking verified official careers sources & ATS domains...";
+    if (btnFindSource) {
+      btnFindSource.innerHTML = `
+        <span class="spinner-inline" style="display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,0.2); border-top-color:#042f2e; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
+        <span>Searching sources...</span>
+      `;
+    }
+
+    try {
+      const resp = await fetch("/api/source-finder/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmedUrl, isDemo, finalUrl: redirectData.finalUrl })
+      });
+
+      // Step 4: Comparing
+      setStepperStep(4);
+      if (progressMsg) progressMsg.textContent = "Comparing role details and matching evidence...";
+      await new Promise(r => setTimeout(r, 250));
+
+      // Step 5: Preparing Report
+      setStepperStep(5);
+      if (progressMsg) progressMsg.textContent = "Preparing verification report...";
+      await new Promise(r => setTimeout(r, 200));
+
+      if (!resp.ok) {
+        let errData = {};
+        try { errData = await resp.json(); } catch {}
+        if (resp.status === 400) {
+          renderSourceFinderResult({
+            state: "INVALID_URL",
+            label: "Invalid URL Request",
+            error: errData.error || "The submitted URL could not be processed.",
+            evidence: { explanation: "Server rejected the URL format or protocol." }
+          }, redirectData);
+        } else if (resp.status === 503) {
+          renderSourceFinderResult({
+            state: "SERVER_ERROR",
+            label: "Service Temporarily Unavailable",
+            error: errData.error || "Source Finder backend engine is temporarily unavailable.",
+            evidence: { explanation: "The server could not initialize the verification engine." }
+          }, redirectData);
+        } else {
+          renderSourceFinderResult({
+            state: "SERVER_ERROR",
+            label: `Server Error (${resp.status})`,
+            error: errData.error || "An error occurred on the verification server.",
+            evidence: { explanation: "Please try again or use Assisted Verification Mode." }
+          }, redirectData);
+        }
+        return;
+      }
+
+      const data = await resp.json();
+      renderSourceFinderResult(data, redirectData);
+    } catch (err) {
+      console.error("Source verification network error:", err);
+      renderSourceFinderResult({
+        state: "SERVER_ERROR",
+        label: "Unable to Access Verification Service",
+        error: "Network connection failed while contacting the verification service.",
+        evidence: {
+          explanation: "Backend server may be restarting or unreachable. Check your network or try again in a moment."
+        }
+      }, redirectData);
+    } finally {
+      if (btnFindSource) {
+        btnFindSource.disabled = false;
+        btnFindSource.innerHTML = `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Find Original Posting
+        `;
+      }
+    }
+  }
+
+  if (btnFindSource) {
+    btnFindSource.addEventListener("click", () => {
+      const val = sourceUrlInput ? sourceUrlInput.value.trim() : "";
+      executeSourceSearch(val);
+    });
+  }
+
+  if (sourceUrlInput) {
+    sourceUrlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const val = sourceUrlInput.value.trim();
+        executeSourceSearch(val);
+      }
+    });
+  }
+
+  sampleUrlBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const sampleUrl = btn.getAttribute("data-url");
+      if (sampleUrl && sourceUrlInput) {
+        sourceUrlInput.value = sampleUrl;
+        executeSourceSearch(sampleUrl);
+      }
+    });
   });
 });

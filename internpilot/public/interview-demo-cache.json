@@ -1,0 +1,416 @@
+{
+  "technical": {
+    "label": "Demo mode: saved interview",
+    "category": "technical",
+    "role": "Junior Web Developer Intern",
+    "company": "Apex Cloud Technologies",
+    "difficulty": "intermediate",
+    "questions": [
+      {
+        "id": "q_demo_tech_1",
+        "number": 1,
+        "total": 5,
+        "text": "Can you explain the difference between let, const, and var in JavaScript, and how variable hoisting affects them?",
+        "category": "Technical",
+        "difficulty": "intermediate",
+        "topics": ["Scope", "Hoisting", "Temporal Dead Zone"],
+        "targetSkill": "JavaScript",
+        "rationale": "Foundational JavaScript competency required for frontend development at Apex Cloud.",
+        "sampleAnswer": "var is function-scoped and hoisted to the top of its scope initialized with undefined. let and const are block-scoped and also hoisted, but they remain in the Temporal Dead Zone until initialized, so accessing them before declaration throws a ReferenceError. Also, const cannot be reassigned after declaration.",
+        "sampleEvaluation": {
+          "score": 9.0,
+          "summary": "Excellent explanation clearly articulating block vs function scope and the Temporal Dead Zone.",
+          "rubric": {
+            "relevance": 9,
+            "accuracy": 10,
+            "clarity": 9,
+            "completeness": 8,
+            "practicalUnderstanding": 9
+          },
+          "strengths": [
+            "Accurately explained the Temporal Dead Zone for let and const",
+            "Clearly distinguished block scope from function scope"
+          ],
+          "improvements": [
+            "Mention that const objects can still have their internal properties mutated"
+          ],
+          "missedPoints": [
+            "Object mutation with const (const allows mutating array items or object keys)"
+          ],
+          "suggestedAnswer": "var is function-scoped and hoisted with undefined. let and const are block-scoped and reside in the Temporal Dead Zone until evaluation. const identifiers cannot be rebound, though object contents remain mutable.",
+          "practicalTip": "Always default to const in modern frontend code and only switch to let when you explicitly need reassignment.",
+          "followUpQuestion": "How does Object.freeze() change the behavior of objects assigned to const variables?",
+          "weakTopicsIdentified": []
+        }
+      },
+      {
+        "id": "q_demo_tech_2",
+        "number": 2,
+        "total": 5,
+        "text": "How does the React Virtual DOM work, and how does React optimize DOM reconciliation during state changes?",
+        "category": "Technical",
+        "difficulty": "intermediate",
+        "topics": ["Virtual DOM", "Reconciliation", "Diffing Algorithm"],
+        "targetSkill": "React",
+        "rationale": "Evaluates core React architecture knowledge for responsive UI building.",
+        "sampleAnswer": "The Virtual DOM is an in-memory representation of real DOM nodes. When component state changes, React renders a new virtual tree, diffs it with the previous tree using its heuristic algorithm, and calculates the minimal batch of real DOM mutations to apply.",
+        "sampleEvaluation": {
+          "score": 8.5,
+          "summary": "Solid conceptual understanding of in-memory diffing and batch updates.",
+          "rubric": {
+            "relevance": 9,
+            "accuracy": 9,
+            "clarity": 8,
+            "completeness": 8,
+            "practicalUnderstanding": 8
+          },
+          "strengths": [
+            "Correctly identified in-memory tree diffing",
+            "Understands that batching minimizes costly browser reflows"
+          ],
+          "improvements": [
+            "Explain the role of unique keys in list diffing"
+          ],
+          "missedPoints": [
+            "Importance of the key prop when rendering lists of elements"
+          ],
+          "suggestedAnswer": "React keeps a virtual DOM representation in memory. During state updates, React diffs the old and new trees using an O(n) heuristic, relying on component types and keys to update only changed real DOM nodes.",
+          "practicalTip": "Never use array index as a key for dynamic lists where elements can be reordered or removed.",
+          "followUpQuestion": "What happens under the hood if you provide unstable random keys on every render?",
+          "weakTopicsIdentified": []
+        }
+      },
+      {
+        "id": "q_demo_tech_3",
+        "number": 3,
+        "total": 5,
+        "text": "Explain how the JavaScript Event Loop, Call Stack, and Task Queue coordinate asynchronous operations like setTimeout and fetch.",
+        "category": "Technical",
+        "difficulty": "intermediate",
+        "topics": ["Event Loop", "Call Stack", "Microtasks vs Macrotasks"],
+        "targetSkill": "JavaScript",
+        "rationale": "Tests depth of async runtime behavior essential for debugging asynchronous UI workflows.",
+        "sampleAnswer": "JavaScript is single-threaded with one call stack. Synchronous code executes first on the stack. Asynchronous callbacks like setTimeout go to the macrotask queue, while Promises go to the microtask queue. When the stack is empty, the event loop drains all microtasks first before picking the next macrotask.",
+        "sampleEvaluation": {
+          "score": 9.2,
+          "summary": "Thorough and accurate breakdown of microtasks vs macrotasks in the browser event loop.",
+          "rubric": {
+            "relevance": 10,
+            "accuracy": 10,
+            "clarity": 9,
+            "completeness": 9,
+            "practicalUnderstanding": 8
+          },
+          "strengths": [
+            "Clear distinction between Promise microtasks and timer macrotasks",
+            "Correct execution priority order identified"
+          ],
+          "improvements": [
+            "Give a concrete UI example where a heavy loop blocks rendering"
+          ],
+          "missedPoints": [],
+          "suggestedAnswer": "Synchronous functions execute on the call stack. Asynchronous operations register callbacks in either the microtask queue (Promise.then, queueMicrotask) or macrotask queue (setTimeout, I/O). The event loop processes all microtasks whenever the stack empties, before rendering and running the next macrotask.",
+          "practicalTip": "Avoid running intensive CPU computation inside microtasks because it completely freezes UI rendering.",
+          "followUpQuestion": "How does requestAnimationFrame fit into this execution cycle relative to browser paint?",
+          "weakTopicsIdentified": []
+        }
+      },
+      {
+        "id": "q_demo_tech_4",
+        "number": 4,
+        "total": 5,
+        "text": "How do you handle responsive layout design in CSS using Flexbox versus CSS Grid, and when would you choose one over the other?",
+        "category": "Technical",
+        "difficulty": "intermediate",
+        "topics": ["Flexbox", "CSS Grid", "Responsive Design"],
+        "targetSkill": "CSS",
+        "rationale": "Relevant for developing accessible and adaptive web interfaces.",
+        "sampleAnswer": "Flexbox is designed for one-dimensional layouts along a single axis (either row or column), making it ideal for navbars or button groups. CSS Grid is two-dimensional, allowing control of both rows and columns simultaneously, which makes it perfect for overall page layouts and dashboard card grids.",
+        "sampleEvaluation": {
+          "score": 8.8,
+          "summary": "Clear distinction between 1D and 2D layout paradigms in modern CSS.",
+          "rubric": {
+            "relevance": 9,
+            "accuracy": 9,
+            "clarity": 9,
+            "completeness": 8,
+            "practicalUnderstanding": 9
+          },
+          "strengths": [
+            "Succinctly framed 1D vs 2D positioning",
+            "Provided practical examples (navbar vs page grid)"
+          ],
+          "improvements": [
+            "Mention CSS subgrid or gap property support"
+          ],
+          "missedPoints": [
+            "Responsive grid patterns like repeat(auto-fit, minmax(...))"
+          ],
+          "suggestedAnswer": "Flexbox is 1D content-first layout suited for toolbars and flex-wrapping chips. Grid is 2D layout-first suited for page skeletons and card matrices, especially with auto-fit minmax patterns that adapt without media queries.",
+          "practicalTip": "Use CSS Grid with repeat(auto-fill, minmax(280px, 1fr)) for responsive cards without writing media queries.",
+          "followUpQuestion": "What is the difference between auto-fit and auto-fill in CSS Grid?",
+          "weakTopicsIdentified": []
+        }
+      },
+      {
+        "id": "q_demo_tech_5",
+        "number": 5,
+        "total": 5,
+        "text": "Describe your Git version control workflow when developing a new feature on a shared team repository.",
+        "category": "Technical",
+        "difficulty": "intermediate",
+        "topics": ["Git", "Branching", "Pull Requests"],
+        "targetSkill": "Git",
+        "rationale": "Ensures team collaboration and code hygiene standards in our engineering environment.",
+        "sampleAnswer": "I pull the latest changes from main, create a descriptive feature branch like feature/auth-flow, make small atomic commits with clear messages, push the branch, and open a Pull Request for code review with a summary and screenshots.",
+        "sampleEvaluation": {
+          "score": 8.5,
+          "summary": "Good standard Git hygiene and collaborative PR workflow description.",
+          "rubric": {
+            "relevance": 9,
+            "accuracy": 9,
+            "clarity": 8,
+            "completeness": 8,
+            "practicalUnderstanding": 8
+          },
+          "strengths": [
+            "Emphasized pulling latest changes before branching",
+            "Practices atomic commits and PR descriptions"
+          ],
+          "improvements": [
+            "Mention running local test suites before pushing commits"
+          ],
+          "missedPoints": [
+            "Merge conflict resolution strategy (rebasing or merging main)"
+          ],
+          "suggestedAnswer": "Start by pulling main to stay synced. Branch out with a clear naming convention. Commit small, test-verified changes. Rebase or merge main to resolve conflicts locally before submitting a clean Pull Request with test evidence.",
+          "practicalTip": "Run git status and your test suite before opening any pull request to ensure no unintended files or regressions slip in.",
+          "followUpQuestion": "When would you prefer git rebase over git merge for maintaining branch history?",
+          "weakTopicsIdentified": []
+        }
+      }
+    ],
+    "finalReport": {
+      "averageScore": 8.8,
+      "readiness": "Interview Ready (Strong Candidate)",
+      "strongAreas": [
+        "Core JavaScript runtime and async event loop architecture",
+        "React Virtual DOM diffing and component lifecycle concepts",
+        "Clean CSS layout paradigms and Git team collaboration workflows"
+      ],
+      "weakTopics": [
+        "Object immutability nuances with const",
+        "CSS Grid auto-fit and minmax responsive patterns"
+      ],
+      "recommendedTopicsToRevise": [
+        "Object.freeze vs Const in JavaScript",
+        "React List Diffing and Key Selection",
+        "CSS Grid Repeat Auto-Fit Patterns"
+      ],
+      "summary": "Demonstrated solid technical understanding across frontend core foundations with clear communication."
+    }
+  },
+  "hr": {
+    "label": "Demo mode: saved interview",
+    "category": "hr",
+    "role": "Junior Web Developer Intern",
+    "company": "Apex Cloud Technologies",
+    "difficulty": "intermediate",
+    "questions": [
+      {
+        "id": "q_demo_hr_1",
+        "number": 1,
+        "total": 5,
+        "text": "Tell me about yourself, your background in computer science, and what inspired you to pursue web development.",
+        "category": "HR",
+        "difficulty": "intermediate",
+        "topics": ["Introduction", "Career Motivation", "Background"],
+        "targetSkill": "Communication",
+        "rationale": "Assesses professional self-presentation and genuine interest in engineering.",
+        "sampleAnswer": "I am a first-year computer science undergraduate passionate about building responsive web applications. I started by building simple HTML/CSS pages and grew into JavaScript and React by developing hands-on projects like a student task tracker. I enjoy bridging design with clean backend data APIs.",
+        "sampleEvaluation": {
+          "score": 8.8,
+          "summary": "Concise, authentic introduction connecting learning progression with practical web projects.",
+          "rubric": {
+            "relevance": 9,
+            "accuracy": 9,
+            "clarity": 9,
+            "completeness": 8,
+            "practicalUnderstanding": 9
+          },
+          "strengths": [
+            "Good concise structure without meandering",
+            "Connected academic studies with tangible project building"
+          ],
+          "improvements": [
+            "Highlight one specific engineering challenge you overcame in your project"
+          ],
+          "missedPoints": [],
+          "suggestedAnswer": "Introduce your current focus, cite a specific project and tech stack, describe the real-world problem it solved, and tie your trajectory directly to the internship role.",
+          "practicalTip": "Keep elevator pitches to under 90 seconds and focus 70% of time on recent work and problem-solving.",
+          "followUpQuestion": "What was the most challenging bug you encountered while building that student task tracker?",
+          "weakTopicsIdentified": []
+        }
+      },
+      {
+        "id": "q_demo_hr_2",
+        "number": 2,
+        "total": 5,
+        "text": "Why are you interested in joining Apex Cloud Technologies specifically, rather than any other tech company?",
+        "category": "HR",
+        "difficulty": "intermediate",
+        "topics": ["Company Research", "Motivation", "Alignment"],
+        "targetSkill": "Company Fit",
+        "rationale": "Verifies whether candidate researched our product and cloud infrastructure domain.",
+        "sampleAnswer": "I researched Apex Cloud's focus on developer-friendly enterprise cloud tooling and modern UI dashboards. What excites me most is your culture of pair programming mentorship for interns, which aligns directly with my goal of writing clean, production-grade code.",
+        "sampleEvaluation": {
+          "score": 9.0,
+          "summary": "Demonstrated genuine prior research about Apex Cloud's products and mentorship culture.",
+          "rubric": {
+            "relevance": 10,
+            "accuracy": 9,
+            "clarity": 9,
+            "completeness": 8,
+            "practicalUnderstanding": 9
+          },
+          "strengths": [
+            "Specifically cited company's cloud tooling focus",
+            "Connected mentorship opportunities with personal learning goals"
+          ],
+          "improvements": [
+            "Reference a specific technical feature or public engineering blog post if available"
+          ],
+          "missedPoints": [],
+          "suggestedAnswer": "Express passion for the company's specific product niche, reference an aspect of their engineering culture or mission, and explain how you will contribute during your internship.",
+          "practicalTip": "Specific company knowledge signals high conscientiousness and separates you from generic applicants.",
+          "followUpQuestion": "Which part of our cloud dashboard product would you be most eager to contribute to?",
+          "weakTopicsIdentified": []
+        }
+      },
+      {
+        "id": "q_demo_hr_3",
+        "number": 3,
+        "total": 5,
+        "text": "Describe a situation where you had to learn a new programming tool or framework under a tight academic or project deadline. How did you manage your time?",
+        "category": "HR",
+        "difficulty": "intermediate",
+        "topics": ["Adaptability", "Time Management", "STAR Method"],
+        "targetSkill": "Adaptability",
+        "rationale": "Evaluates fast-learning ability and self-directed problem-solving.",
+        "sampleAnswer": "During a college hackathon, my team decided to build our frontend with React, which I hadn't used extensively. I broke my learning into micro-goals: focused first on component props and state, built a proof-of-concept card within 3 hours, and consulted official documentation instead of getting stuck in long tutorials.",
+        "sampleEvaluation": {
+          "score": 8.7,
+          "summary": "Great STAR method application highlighting prioritization and focused documentation reading.",
+          "rubric": {
+            "relevance": 9,
+            "accuracy": 9,
+            "clarity": 8,
+            "completeness": 9,
+            "practicalUnderstanding": 9
+          },
+          "strengths": [
+            "Clear timeline and actionable problem breakdown",
+            "Demonstrated resourcefulness using official docs over passive video watching"
+          ],
+          "improvements": [
+            "Explicitly state the final measurable result of the hackathon project"
+          ],
+          "missedPoints": [
+            "Quantifiable outcome or team feedback"
+          ],
+          "suggestedAnswer": "Frame the situation and crunch deadline. Detail your action: prioritizing core APIs and setting milestone checks. Conclude with the deliverable: submitted on time and working product.",
+          "practicalTip": "Always finish a STAR behavioural answer with the concrete outcome or lesson learned.",
+          "followUpQuestion": "How did your teammates react to the prototype you delivered?",
+          "weakTopicsIdentified": []
+        }
+      },
+      {
+        "id": "q_demo_hr_4",
+        "number": 4,
+        "total": 5,
+        "text": "How do you handle constructive criticism or code review feedback when a senior teammate suggests major changes to your code?",
+        "category": "HR",
+        "difficulty": "intermediate",
+        "topics": ["Feedback Reception", "Growth Mindset", "Code Review"],
+        "targetSkill": "Collaboration",
+        "rationale": "Assesses receptiveness to mentorship and engineering standards.",
+        "sampleAnswer": "I welcome code review feedback as a learning opportunity rather than personal criticism. If a senior engineer points out a flaw or asks for a refactor, I ask clarifying questions to understand the architectural reason behind the suggestion, update the code, and document what I learned so I don't repeat the mistake.",
+        "sampleEvaluation": {
+          "score": 9.2,
+          "summary": "Exemplary growth mindset recognizing code reviews as collaborative learning mechanisms.",
+          "rubric": {
+            "relevance": 10,
+            "accuracy": 9,
+            "clarity": 9,
+            "completeness": 9,
+            "practicalUnderstanding": 9
+          },
+          "strengths": [
+            "Separated personal ego from code quality",
+            "Focuses on asking 'why' to internalize underlying principles"
+          ],
+          "improvements": [
+            "Give a brief real-world example of feedback you incorporated"
+          ],
+          "missedPoints": [],
+          "suggestedAnswer": "Emphasize gratitude for peer review, detail how you clarify requirements, test the refactored code, and update team documentation or tests.",
+          "practicalTip": "Never become defensive in code reviews; view every comment as senior mentorship invested in your growth.",
+          "followUpQuestion": "Can you describe a specific piece of feedback that significantly improved how you write code?",
+          "weakTopicsIdentified": []
+        }
+      },
+      {
+        "id": "q_demo_hr_5",
+        "number": 5,
+        "total": 5,
+        "text": "Where do you see your technical skills evolving over the next two years, and what steps are you actively taking toward that goal?",
+        "category": "HR",
+        "difficulty": "intermediate",
+        "topics": ["Long-Term Goals", "Self-Improvement", "Career Vision"],
+        "targetSkill": "Ambition & Planning",
+        "rationale": "Evaluates candidate ambition, goal discipline, and long-term potential.",
+        "sampleAnswer": "Over the next two years, I want to grow from building frontend components into full-stack architecture, mastering TypeScript, Next.js, and backend API design. I am actively building end-to-end projects on GitHub, participating in open-source discussions, and practicing algorithmic problem-solving consistently.",
+        "sampleEvaluation": {
+          "score": 8.8,
+          "summary": "Realistic, actionable two-year trajectory with tangible ongoing efforts.",
+          "rubric": {
+            "relevance": 9,
+            "accuracy": 9,
+            "clarity": 9,
+            "completeness": 8,
+            "practicalUnderstanding": 9
+          },
+          "strengths": [
+            "Specific technologies targeted (TypeScript, Next.js, APIs)",
+            "Backed up aspirations with current GitHub activity"
+          ],
+          "improvements": [
+            "Mention how this specific internship fits into that two-year milestone"
+          ],
+          "missedPoints": [],
+          "suggestedAnswer": "State your 2-year goal (full-stack proficiency), describe current daily habits (GitHub, projects), and explain how this internship provides the real-world milestone you need.",
+          "practicalTip": "Connect long-term technical ambition back to how you will create value for the host company.",
+          "followUpQuestion": "What specific open-source repository or library do you follow most closely?",
+          "weakTopicsIdentified": []
+        }
+      }
+    ],
+    "finalReport": {
+      "averageScore": 8.9,
+      "readiness": "Interview Ready (High Cultural & Team Fit)",
+      "strongAreas": [
+        "Growth mindset and receptive attitude toward code review feedback",
+        "Structured STAR methodology in behavioural responses",
+        "Clear professional alignment with company culture and cloud domain"
+      ],
+      "weakTopics": [
+        "Include more quantifiable metrics when discussing project outcomes"
+      ],
+      "recommendedTopicsToRevise": [
+        "Quantifiable Metrics in STAR Delivery",
+        "Deepening Product Knowledge on Apex Cloud Offerings"
+      ],
+      "summary": "Strong, articulate candidate showing high motivation, self-awareness, and readiness for a collaborative internship team."
+    }
+  }
+}

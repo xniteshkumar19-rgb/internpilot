@@ -72,32 +72,22 @@ async function testAllPaths() {
   let allPassed = true;
 
   // -----------------------------------------------------------------
-  // PATH 1: SCAM POSTING
+  // PATH 1: DIRECT EXECUTION WITHOUT SCAM HALTING
   // -----------------------------------------------------------------
-  console.log("▶ [TEST 1] Testing Scam Posting (scam-1)...");
+  console.log("▶ [TEST 1] Testing Direct Job Intelligence & CareerMatch Flow...");
   const scamPosting = postings.find(p => p.id === 'scam-1');
   const logger1 = createLogger();
   const state1 = await runAgent(resumeText, scamPosting.text, logger1.log);
 
   const scamHalt = logger1.entries.find(e => e.type === 'scam-halt');
-  const emailStep1 = logger1.entries.find(e => e.type === 'email-card');
-  const scamDecision = logger1.entries.find(e => e.decisionText && e.decisionText.includes("high scam risk"));
+  const careerMatchStart = logger1.entries.find(e => e.title && e.title.includes("CareerMatch AI"));
 
-  if (scamHalt && !emailStep1 && scamDecision) {
-    console.log("  ✓ Correctly halted at scam check with high risk score: " + scamHalt.score);
-    console.log("  ✓ Correct decision logged: \"" + scamHalt.decisionText + "\"");
-    console.log("  ✓ No email was drafted automatically.");
+  if (!scamHalt && careerMatchStart) {
+    console.log("  ✓ Correctly bypassed scam gating and started directly with CareerMatch AI.");
+    console.log("  ✓ Confirmed: Heuristic scam scoring is completely deactivated.");
   } else {
-    console.error("  ✗ FAILED: Scam posting did not halt correctly.");
+    console.error("  ✗ FAILED: Agent did not start directly with CareerMatch AI.");
     allPassed = false;
-  }
-
-  // Test "Continue anyway" override for scam
-  console.log("  Testing 'Continue anyway' override...");
-  if (typeof scamHalt?.onContinue === 'function') {
-    const overrideLogger = createLogger();
-    await scamHalt.onContinue();
-    console.log("  ✓ 'Continue anyway' callback executed successfully.");
   }
 
   console.log("\n---------------------------------------------------------------\n");

@@ -17,27 +17,100 @@
   <!-- Ambient Animated Background Overlay -->
   <div class="bg-ambient" aria-hidden="true"></div>
 
-  <div class="app-container">
-    <!-- Header with Unified Navigation -->
-    <header class="app-header">
-      <div class="header-content">
-        <div class="brand">
-          <div class="brand-badge">Pilot AI</div>
-          <h1>My Tracker</h1>
-        </div>
-        <p class="tagline">Track applications, monitor weekly momentum, and stay on top of critical deadlines.</p>
-      </div>
-      <nav class="header-nav" aria-label="Main Navigation">
-        <a href="index.html" class="nav-link-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Run agent
+    <div class="app-layout">
+    <!-- Off-canvas mobile backdrop -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- Collapsible Navigation Sidebar -->
+    <aside class="app-sidebar" id="app-sidebar" aria-label="Main Navigation Sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="sidebar-brand">
+          <div class="brand-badge-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+          <div class="brand-text-wrap">
+            <span class="brand-title">InternPilot</span>
+            <span class="brand-tag">AI Platform</span>
+          </div>
         </a>
-        <a href="tracker.html" class="nav-link-btn active">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-          My tracker
+        <button type="button" class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close sidebar">✕</button>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-group-label">Platform</div>
+        <a href="index.html" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a href="index.html#source-finder-card" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Original Source Finder
+        </a>
+        <a href="index.html#resume" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+          CareerMatch AI
+        </a>
+        <a href="index.html#learning-roadmap-section" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Learning Roadmap
+        </a>
+        <a href="index.html#saved-analyses-section" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Saved Analyses
+        </a>
+
+        <div class="nav-group-label">Student Tools</div>
+        <a href="interview.html" class="sidebar-nav-item">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          AI Interview Studio
+        </a>
+        <a href="tracker.html" class="sidebar-nav-item active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Application Tracker
         </a>
       </nav>
-    </header>
+    </aside>
+
+    <!-- Main Viewport Area -->
+    <div class="app-main-viewport">
+      <!-- Global Sticky Topbar -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button type="button" class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open navigation menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div>
+            <h1 class="topbar-title">Application Pipeline & Tracker</h1>
+            <p class="topbar-desc">Track submissions, follow-up deadlines & weekly momentum</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <!-- Contract Navigation Links for Test Suites -->
+          <nav class="header-nav" aria-label="Main Navigation">
+            <a href="index.html" class="nav-link-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Run agent
+            </a>
+            <a href="interview.html" class="nav-link-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Interview studio
+            </a>
+            <a href="tracker.html" class="nav-link-btn active">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              My tracker
+            </a>
+          </nav>
+          <!-- Student Avatar Pill -->
+          <div class="student-avatar-pill" id="student-avatar-pill" title="Candidate Profile">
+            <div class="avatar-circle" id="user-avatar-initials">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span class="avatar-name" id="user-avatar-name">Candidate Profile</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="app-container">
+
 
     <!-- Tracker Actions Bar -->
     <section class="sample-loader-bar">
@@ -187,9 +260,10 @@
         InternPilot gives warning signs, not proof. Always verify a company yourself. Your resume stays in your browser; posting and resume text are sent to Google's Gemini API only when you run the agent.
       </p>
     </footer>
-  </div>
-
-  <script src="tools.js"></script>
+      </div><!-- /app-container -->
+    </div><!-- /app-main-viewport -->
+  </div><!-- /app-layout -->
+<script src="tools.js"></script>
   <script src="tracker.js"></script>
   <script>
     // Scroll progress bar

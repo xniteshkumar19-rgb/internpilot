@@ -16,8 +16,12 @@
     "test:score": "node test-score.js",
     "test:dynamic": "node test-dynamic.js",
     "test:careermatch": "node test-careermatch.js",
+    "test:pdf-save": "node test-pdf-and-save.js",
+    "test:interview": "node test-interview-studio.js",
+    "test:audit": "node test-full-manual-verification.js",
     "test:demo": "node test-demo-mode.js",
-    "test:browser": "node test-browser-e2e.js"
+    "test:browser": "node test-browser-e2e.js",
+    "test:redirect": "node test-redirect-inspector.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
