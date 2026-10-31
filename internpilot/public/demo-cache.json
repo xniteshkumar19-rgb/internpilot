@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-31T06:37:06.609Z",
-  "model": "gemini-1.5-flash",
+  "generatedAt": "2026-10-31T08:58:13.153Z",
+  "model": "gemini-3.8-flash",
   "sampleResumeText": "ROHAN SHARMA\nEmail: rohan.sharma.student@example.com | Phone: +91 98765 01234\nLocation: New Delhi, India | GitHub: github.com/rohan-sharma-dev\n\nOBJECTIVE\nMotivated first-year Computer Science undergraduate eager to apply foundational programming and web development skills in an internship role.\n\nEDUCATION\nGreen Valley Institute of Technology\nBachelor of Technology in Computer Science and Engineering (1st Year)\nExpected Graduation: 2028 | Current CGPA: 8.6 / 10\n\nTECHNICAL SKILLS\n- Languages: Python, JavaScript, HTML, CSS\n- Version Control: Git, GitHub\n- Soft Skills: Communication, Problem Solving, Team Collaboration\n\nPROJECTS\nStudent Study Tracker (Web App)\n- Developed a lightweight, responsive task and revision tracker using HTML, CSS, and vanilla JavaScript.\n- Implemented localStorage to persist student daily tasks and subject schedules across browser sessions.\n- Maintained code versioning and commit history on GitHub using Git.\n\nADDITIONAL ACTIVITIES\n- Active member of the College Open Source Coding Club.\n- Completed 30 Days of Python coding challenge.",
   "postings": {
     "genuine-1": {

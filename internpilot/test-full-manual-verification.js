@@ -70,8 +70,13 @@ async function runAudit() {
   // A. Healthcheck /api
   const apiRes = await simulateRoute(app, 'GET', '/api');
   assert(apiRes.status === 200 && apiRes.data.status === 'ok' && apiRes.data.service === 'InternPilot API', "GET /api returns healthy status and service signature");
+  assert(apiRes.data.geminiModel === 'gemini-3.8-flash', `GET /api reports migrated stable model: gemini-3.8-flash (Got: ${apiRes.data.geminiModel})`);
 
-  // B. Test Postings
+  // B. Gemini Email Route Error Handling & Security Check
+  const geminiMissingKeyRes = await simulateRoute(app, 'POST', '/api/gemini', { prompt: 'Write an email draft' });
+  assert(geminiMissingKeyRes.status === 503 && geminiMissingKeyRes.data.code === 'API_KEY_MISSING', "POST /api/gemini returns 503 API_KEY_MISSING when unconfigured without crashing");
+
+  // C. Test Postings
   const postingsRes = await simulateRoute(app, 'GET', '/api/test-postings');
   const postingsData = JSON.parse(postingsRes.data);
   assert(postingsRes.status === 200 && Array.isArray(postingsData) && postingsData.length === 7, `GET /api/test-postings returns 7 sample postings (Got: ${postingsData.length})`);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InternPilot - Smart AI Internship Assistant & Scam Checker</title>
+  <title>InternPilot - Smart AI Internship Assistant & Original Source Finder</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,6 +31,14 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
           Run agent
         </a>
+        <a href="interview.html" class="nav-link-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Interview studio
+        </a>
+        <a href="#saved-analyses-section" id="nav-saved-analyses-btn" class="nav-link-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Saved analyses (<span id="nav-saved-count">0</span>)
+        </a>
         <a href="tracker.html" class="nav-link-btn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           My tracker
@@ -44,8 +52,8 @@
         <span class="hero-badge-dot"></span>
         <span>Student Internship Copilot</span>
       </div>
-      <h1 class="hero-heading">Verify Internships. <br><span class="accent-text">Detect Scams.</span> Draft Outreach.</h1>
-      <p class="hero-subheading">A dedicated review desk for students: instant rule-based scam detection, automated skill alignment with your resume, and tailored email outreach in seconds.</p>
+      <h1 class="hero-heading">Verify Internships. <br><span class="accent-text">Find Original Source.</span> Draft Outreach.</h1>
+      <p class="hero-subheading">A dedicated review desk for students: identify original company postings on official careers websites, automated skill alignment with your resume, and tailored email outreach in seconds.</p>
     </section>
 
     <!-- Top Dashboard Analytics Overview -->
@@ -75,6 +83,11 @@
         <span class="overview-stat-val" id="dash-due-soon">0</span>
         <span class="overview-stat-sub">Next 7 calendar days</span>
       </div>
+      <div class="overview-stat-card" id="card-saved-analyses-stat" style="cursor: pointer;">
+        <span class="overview-stat-label">Saved Analyses</span>
+        <span class="overview-stat-val" id="dash-saved-analyses">0</span>
+        <span class="overview-stat-sub">Resume roadmaps anytime</span>
+      </div>
     </section>
 
     <!-- Two-Column Review Desk Layout -->
@@ -102,6 +115,72 @@
             </label>
             <span id="demo-badge" class="badge badge-demo" style="display: none;">Demo mode: using saved results</span>
           </div>
+        </div>
+
+        <!-- ==========================================
+             FEATURE: FIND ORIGINAL INTERNSHIP SOURCE
+             ========================================== -->
+        <div class="card source-finder-card" id="source-finder-card">
+          <div class="card-header">
+            <div class="source-finder-header-row">
+              <span class="source-finder-icon" aria-hidden="true">🔎</span>
+              <div>
+                <h2>Find Original Internship Source</h2>
+                <span class="card-subtitle">Found an internship on a job platform? Let InternPilot search for its original posting on the company's official careers website.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- URL Input Bar -->
+          <div class="source-input-wrap">
+            <div class="source-input-group">
+              <input
+                type="url"
+                id="source-url-input"
+                class="source-url-input"
+                placeholder="Paste internship posting URL (e.g. LinkedIn, Internshala, Indeed)..."
+                aria-label="Internship posting URL">
+              <button type="button" id="btn-find-source" class="btn-primary btn-find-source">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Find Original Posting
+              </button>
+            </div>
+
+            <!-- Quick Sample Postings for Testing -->
+            <div class="source-sample-row">
+              <span class="source-sample-label">Quick sample URLs:</span>
+              <button type="button" class="btn-sample-url" data-url="https://www.linkedin.com/jobs/view/apex-cloud-junior-web-developer-intern-39218">Apex Cloud (Exact Match)</button>
+              <button type="button" class="btn-sample-url" data-url="https://internshala.com/internship/detail/frontend-intern-vanguard-data-labs-8812">Vanguard Labs (Possible Match)</button>
+              <button type="button" class="btn-sample-url" data-url="https://indeed.com/viewjob?jk=horizon-next-python-intern-4421">Horizon Next (Third-Party Only)</button>
+            </div>
+          </div>
+
+          <!-- 5-Step Process Stepper -->
+          <div id="source-stepper" class="source-stepper" style="display: none;">
+            <div class="source-step-item" id="sf-step-1">
+              <span class="step-num">1</span>
+              <span class="step-label">Reading posting</span>
+            </div>
+            <div class="source-step-item" id="sf-step-2">
+              <span class="step-num">2</span>
+              <span class="step-label">Identifying company & role</span>
+            </div>
+            <div class="source-step-item" id="sf-step-3">
+              <span class="step-num">3</span>
+              <span class="step-label">Searching official sources</span>
+            </div>
+            <div class="source-step-item" id="sf-step-4">
+              <span class="step-num">4</span>
+              <span class="step-label">Comparing job details</span>
+            </div>
+            <div class="source-step-item" id="sf-step-5">
+              <span class="step-num">5</span>
+              <span class="step-label">Preparing report</span>
+            </div>
+          </div>
+
+          <!-- Source Verification Results Container -->
+          <div id="source-finder-result" class="source-finder-result" style="display: none;"></div>
         </div>
 
         <!-- Resume Card with Drag-and-Drop & File Parsing -->
@@ -173,7 +252,7 @@
 
           <p class="field-note">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            Your posting text is analyzed locally with deterministic scam checks, and sent to Gemini API for entity extraction.
+            Your posting text is analyzed locally for skill extraction, CareerMatch AI alignment, and tailored outreach.
           </p>
         </div>
 
@@ -185,28 +264,10 @@
           </button>
         </div>
 
-        <!-- Marked-Up Posting View with Sequential Evidence Highlights -->
-        <div id="annotated-posting-card" class="annotated-posting-card" aria-label="Marked-Up Job Posting Evidence">
-          <div class="annotated-posting-header">
-            <span class="annotated-posting-title">Marked-Up Posting (Evidence Review)</span>
-            <span class="card-subtitle" id="annotated-count-badge">0 flags</span>
-          </div>
-          <div id="annotated-posting-body" class="annotated-posting-body"></div>
-        </div>
-
       </section>
 
       <!-- Right Column: The Review -->
       <section class="desk-review" id="results" aria-label="Review and Results">
-
-        <!-- Verdict Banner (Plain sentence at top of review desk) -->
-        <div id="verdict-banner" class="verdict-banner" style="display: none;">
-          <div class="verdict-header-row">
-            <span class="verdict-title">Verdict</span>
-            <span id="verdict-badge" class="badge"></span>
-          </div>
-          <div id="verdict-sentence" class="verdict-sentence"></div>
-        </div>
 
         <!-- Live Log Panel (Vertical Timeline) -->
         <div class="card live-log-card" id="log" aria-label="Agent Execution Live Log">
@@ -219,7 +280,7 @@
           </div>
           <div id="live-log" class="live-log-container" aria-live="polite">
             <div class="log-empty-state">
-              Upload your resume and click <strong>"Run InternPilot"</strong> to inspect any internship posting for risks, calculate skill alignment, and generate a tailored draft.
+              Upload your resume and click <strong>"Run InternPilot"</strong> to analyze skill alignment, view learning pathways, and generate a tailored application draft.
             </div>
           </div>
         </div>
@@ -227,6 +288,29 @@
       </section>
 
     </main>
+
+    <!-- Dedicated Section: My Saved Analyses & Roadmap Progress -->
+    <section id="saved-analyses-section" class="saved-analyses-section card reveal" aria-label="My Saved Analyses">
+      <div class="saved-analyses-header">
+        <div class="saved-title-left">
+          <div class="saved-icon-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          </div>
+          <div>
+            <h2 class="saved-section-title">My Saved Analyses & Roadmap Progress</h2>
+            <span class="card-subtitle">Resume your personalized learning roadmaps, track activity milestones, and download PDF reports locally.</span>
+          </div>
+        </div>
+        <div class="saved-title-right">
+          <span class="badge badge-demo" id="saved-analyses-badge">0 saved</span>
+        </div>
+      </div>
+      <div id="saved-analyses-container" class="saved-analyses-grid">
+        <div class="saved-empty-state">
+          No saved analyses yet. Run an analysis above and click <strong>"Save Progress"</strong> to keep your CareerMatch results and roadmap milestones here.
+        </div>
+      </div>
+    </section>
 
     <!-- Required Disclaimer Footer -->
     <footer class="app-footer">
@@ -237,6 +321,7 @@
   </div>
 
   <script src="tools.js"></script>
+  <script src="pdf-generator.js"></script>
   <script src="agent.js"></script>
   <script src="app.js"></script>
   <script>

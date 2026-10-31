@@ -34,13 +34,38 @@ async function checkAsync(desc, fn) {
 // ---------------------------------------------------------------------------
 console.log('▶ [TEST 1 & 2] Testing Missing API Key Handling...');
 checkAsync('Server returns 503 with API_KEY_MISSING when GEMINI_API_KEY is unset', async () => {
-  const res = await fetch('http://localhost:3000/api/gemini', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt: 'test' })
-  });
-  assert.strictEqual(res.status, 503, `Expected status 503, got ${res.status}`);
-  const data = await res.json();
+  let status, data;
+  try {
+    const res = await fetch('http://localhost:3000/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: 'test' })
+    });
+    status = res.status;
+    data = await res.json();
+  } catch (err) {
+    // In-process simulation fallback when running inside sandbox runner
+    const app = require('./server');
+    const simRes = await new Promise((resolve) => {
+      const req = {
+        method: 'POST',
+        url: '/api/gemini',
+        body: { prompt: 'test' },
+        headers: { 'content-type': 'application/json' }
+      };
+      let code = 200;
+      const resObj = {
+        status: (c) => { code = c; return resObj; },
+        setHeader: () => {},
+        json: (d) => resolve({ status: code, data: d }),
+        send: (d) => resolve({ status: code, data: d })
+      };
+      app(req, resObj);
+    });
+    status = simRes.status;
+    data = simRes.data;
+  }
+  assert.strictEqual(status, 503, `Expected status 503, got ${status}`);
   assert.strictEqual(data.code, 'API_KEY_MISSING', `Expected code API_KEY_MISSING, got ${data.code}`);
   assert.strictEqual(data.error, 'AI service is not configured.', `Expected friendly error, got ${data.error}`);
 });

@@ -26,7 +26,7 @@ async function runAgent(resumeText, postingText, log, options = {}) {
 
   const state = options.existingState || {
     details: null,
-    scam: null,
+    scam: { riskScore: 0, level: "low", reasons: [] },
     match: null,
     email: null,
     resumeText: resumeText || "",
@@ -202,77 +202,11 @@ async function runAgent(resumeText, postingText, log, options = {}) {
   }
 
   // ==========================================
-  // STEP B: SCAM CHECK (ALWAYS ON FULL TEXT)
-  // ==========================================
-  if (startStep === "read" || startStep === "scam") {
-    log({
-      type: "step-start",
-      title: "Checking for scams...",
-      icon: "shield"
-    });
-
-    try {
-      // Rule-based scam check runs on state.postingText (the FULL, untrimmed text)
-      const scamResult = _scamCheck(state.postingText);
-      state.scam = scamResult;
-
-      if (scamResult.level === "high") {
-        // High Risk: STOP the flow
-        log({
-          type: "scam-halt",
-          title: "⚠ High Scam Risk Detected",
-          score: scamResult.riskScore,
-          level: "high",
-          reasons: scamResult.reasons,
-          decisionText: "Decision: high scam risk, skipping matching and email.",
-          onContinue: () => {
-            log({
-              type: "decision",
-              text: "User chose to continue anyway despite high scam risk."
-            });
-            return runAgent(state.resumeText, state.postingText, log, {
-              ...options,
-              existingState: state,
-              startStep: "match"
-            });
-          }
-        });
-        return state; // STOP the automatic flow
-      } else if (scamResult.level === "medium") {
-        // Medium Risk: Show warning banner and proceed
-        log({
-          type: "scam-warn",
-          title: "✓ Checking for scams: Medium risk indicators found",
-          score: scamResult.riskScore,
-          level: "medium",
-          reasons: scamResult.reasons,
-          decisionText: "Decision: medium scam risk detected, proceeding with caution."
-        });
-      } else {
-        // Low Risk: Clean posting
-        log({
-          type: "scam-clean",
-          title: "✓ Checking for scams: Low risk",
-          score: scamResult.riskScore,
-          level: "low",
-          decisionText: "Decision: low scam risk, proceeding to skill matching."
-        });
-      }
-    } catch (err) {
-      console.error("Step B error:", err);
-      log({
-        type: "step-error",
-        text: "Scam check encountered an error. Proceeding to matching."
-      });
-    }
-  }
-
-  // ==========================================
-  // STEP C: MATCH SKILLS & CAREERMATCH AI
+  // STEP B: MATCH SKILLS & CAREERMATCH AI
   // ==========================================
   const hasResume = !!(state.resumeText && state.resumeText.trim());
 
-  if (startStep === "read" || startStep === "scam" || startStep === "match") {
+  if (startStep === "read" || startStep === "match") {
     log({
       type: "step-start",
       title: "CareerMatch AI: Evaluating skill alignment & pathways...",
@@ -308,6 +242,7 @@ async function runAgent(resumeText, postingText, log, options = {}) {
             partial: matchResult.partial || [],
             missing: matchResult.missing,
             careerMatch: cm,
+            scamAssessment: state.scam || null,
             decisionText: "Decision: match is very low, suggesting skills to learn first and personalized roadmap.",
             onDraftAnyway: () => {
               log({
@@ -342,6 +277,7 @@ async function runAgent(resumeText, postingText, log, options = {}) {
             partial: matchResult.partial || [],
             missing: matchResult.missing,
             careerMatch: cm,
+            scamAssessment: state.scam || null,
             decisionText: `Decision: skill match acceptable (about ${matchResult.percent}%), proceeding to email draft.`
           });
         }
@@ -356,9 +292,9 @@ async function runAgent(resumeText, postingText, log, options = {}) {
   }
 
   // ==========================================
-  // STEP D: DRAFT EMAIL
+  // STEP C: DRAFT EMAIL
   // ==========================================
-  if (hasResume && (startStep === "read" || startStep === "scam" || startStep === "match" || startStep === "email")) {
+  if (hasResume && (startStep === "read" || startStep === "match" || startStep === "email")) {
     log({
       type: "step-start",
       title: "Preparing your application email...",

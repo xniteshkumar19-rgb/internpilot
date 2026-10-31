@@ -1259,6 +1259,139 @@ function updateApplication(id, updates) {
 }
 
 // ==========================================
+// FEATURE 2: SAVED CAREERMATCH ANALYSES STORAGE
+// (localStorage key: "internpilot_saved_analyses")
+// ==========================================
+
+const SAVED_ANALYSES_STORAGE_KEY = "internpilot_saved_analyses";
+
+function loadSavedAnalyses() {
+  try {
+    if (typeof localStorage === "undefined") return [];
+    const data = localStorage.getItem(SAVED_ANALYSES_STORAGE_KEY);
+    if (!data) return [];
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn("Could not load saved analyses from localStorage:", err);
+    return [];
+  }
+}
+
+function saveCareerAnalysis(analysis) {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    if (!analysis || typeof analysis !== "object") return null;
+
+    const current = loadSavedAnalyses();
+    const id = analysis.id || ("cm_analysis_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7));
+    const nowIso = new Date().toISOString();
+
+    // Snapshot current activity progress states for this analysis
+    const activityProgress = analysis.activityProgress ? { ...analysis.activityProgress } : {};
+    if (Array.isArray(analysis.roadmap)) {
+      analysis.roadmap.forEach((r, rIdx) => {
+        const skill = r.skill || rIdx;
+        const prefix = `cm_act_${encodeURIComponent(skill)}_`;
+        (r.practicalActivities || []).forEach((_, actIdx) => {
+          const key = prefix + actIdx;
+          if (activityProgress[key] === undefined && typeof localStorage !== "undefined") {
+            const val = localStorage.getItem(key);
+            if (val === "done") {
+              activityProgress[key] = "done";
+            }
+          }
+        });
+      });
+    }
+
+    const newRecord = {
+      id,
+      savedAt: analysis.savedAt || nowIso,
+      updatedAt: nowIso,
+      role: analysis.role || "Internship Role",
+      company: analysis.company || "Company",
+      percent: analysis.percent !== undefined && analysis.percent !== null ? analysis.percent : 0,
+      level: analysis.level || "moderate",
+      scoreBreakdown: analysis.scoreBreakdown || "",
+      matched: Array.isArray(analysis.matched) ? analysis.matched : [],
+      partial: Array.isArray(analysis.partial) ? analysis.partial : [],
+      missing: Array.isArray(analysis.missing) ? analysis.missing : [],
+      requiredSkills: Array.isArray(analysis.requiredSkills) ? analysis.requiredSkills : [],
+      preferredSkills: Array.isArray(analysis.preferredSkills) ? analysis.preferredSkills : [],
+      responsibilities: Array.isArray(analysis.responsibilities) ? analysis.responsibilities : [],
+      qualifications: Array.isArray(analysis.qualifications) ? analysis.qualifications : [],
+      roadmap: Array.isArray(analysis.roadmap) ? analysis.roadmap : [],
+      projects: Array.isArray(analysis.projects) ? analysis.projects : [],
+      scamAssessment: analysis.scamAssessment || { riskScore: 0, level: "low", reasons: [] },
+      activityProgress: activityProgress,
+      postingSnippet: analysis.postingSnippet || ""
+    };
+
+    const existingIdx = current.findIndex(a => a.id === id);
+    if (existingIdx !== -1) {
+      current[existingIdx] = newRecord;
+    } else {
+      current.unshift(newRecord);
+    }
+
+    localStorage.setItem(SAVED_ANALYSES_STORAGE_KEY, JSON.stringify(current));
+    return newRecord;
+  } catch (err) {
+    console.error("Error saving career analysis to localStorage:", err);
+    return null;
+  }
+}
+
+function deleteSavedAnalysis(id) {
+  try {
+    if (typeof localStorage === "undefined" || !id) return false;
+    const current = loadSavedAnalyses();
+    const filtered = current.filter(a => a.id !== id);
+    if (filtered.length === current.length) return false;
+    localStorage.setItem(SAVED_ANALYSES_STORAGE_KEY, JSON.stringify(filtered));
+    return true;
+  } catch (err) {
+    console.error("Error deleting saved analysis from localStorage:", err);
+    return false;
+  }
+}
+
+function getSavedAnalysis(id) {
+  try {
+    const list = loadSavedAnalyses();
+    return list.find(a => a.id === id) || null;
+  } catch {
+    return null;
+  }
+}
+
+function calculateRoadmapProgress(analysis) {
+  if (!analysis || !Array.isArray(analysis.roadmap) || analysis.roadmap.length === 0) {
+    return { completed: 0, total: 0, percent: 0 };
+  }
+
+  const prog = analysis.activityProgress || {};
+  let total = 0;
+  let completed = 0;
+
+  analysis.roadmap.forEach((r, rIdx) => {
+    const skill = r.skill || rIdx;
+    const prefix = `cm_act_${encodeURIComponent(skill)}_`;
+    (r.practicalActivities || []).forEach((_, actIdx) => {
+      total++;
+      const key = prefix + actIdx;
+      const isDone = (prog && (prog[key] === "done" || prog[key] === true)) ||
+        (typeof localStorage !== "undefined" && localStorage.getItem(key) === "done");
+      if (isDone) completed++;
+    });
+  });
+
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return { completed, total, percent };
+}
+
+// ==========================================
 // UNIVERSAL MODULE EXPORT GUARD
 // ==========================================
 if (typeof module !== "undefined" && module.exports) {
@@ -1280,6 +1413,12 @@ if (typeof module !== "undefined" && module.exports) {
     computeActivity,
     saveApplication,
     updateApplication,
-    loadApplications
+    loadApplications,
+    SAVED_ANALYSES_STORAGE_KEY,
+    loadSavedAnalyses,
+    saveCareerAnalysis,
+    deleteSavedAnalysis,
+    getSavedAnalysis,
+    calculateRoadmapProgress
   };
 }

@@ -88,17 +88,7 @@ async function testPosting(p) {
   }
 
   // Check Decision depending on posting label
-  if (p.id === 'scam-1' || p.id === 'scam-2') {
-    // Should halt on scam check
-    const scamHalt = logs.find(l => l.type === 'scam-halt');
-    const emailCard = logs.find(l => l.type === 'email-card');
-    if (scamHalt && scamHalt.level === 'high' && !emailCard) {
-      console.log(`  ✓ Correctly HALTED on high scam risk (${scamHalt.score}/100). No email drafted.`);
-    } else {
-      console.error(`  ✗ FAILED: Expected scam halt with no email for ${p.id}`);
-      allPassed = false;
-    }
-  } else if (p.id === 'lowmatch-1') {
+  if (p.id === 'lowmatch-1') {
     // Should halt on low match (<30%)
     const matchHalt = logs.find(l => l.type === 'match-halt');
     const emailCard = logs.find(l => l.type === 'email-card');
@@ -119,14 +109,14 @@ async function testPosting(p) {
       console.error(`  ✗ FAILED: Expected email draft and tracker prompt for genuine posting ${p.id}`);
       allPassed = false;
     }
-  } else if (p.id === 'tricky-1' || p.id === 'tricky-2') {
-    // Should show caution and proceed
-    const scamWarn = logs.find(l => l.type === 'scam-warn');
-    const emailCard = logs.find(l => l.type === 'email-card');
-    if (scamWarn && scamWarn.level === 'medium' && emailCard) {
-      console.log(`  ✓ Correctly identified MEDIUM risk warning (${scamWarn.score}/100). Caution displayed and flow proceeded.`);
+  } else {
+    // Other postings run directly through CareerMatch AI without scam check halting
+    const careerMatchStart = logs.find(l => l.title && l.title.includes('CareerMatch AI'));
+    const scamHalt = logs.find(l => l.type === 'scam-halt');
+    if (careerMatchStart && !scamHalt) {
+      console.log(`  ✓ Evaluated directly in CareerMatch AI without scam check halting (Deactivated scam rules).`);
     } else {
-      console.error(`  ✗ FAILED: Expected medium scam warning for tricky posting ${p.id}`);
+      console.error(`  ✗ FAILED: Posting ${p.id} was blocked or did not reach CareerMatch AI.`);
       allPassed = false;
     }
   }
