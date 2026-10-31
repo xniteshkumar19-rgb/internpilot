@@ -71,11 +71,15 @@ ADDITIONAL ACTIVITIES
 
 let interviewDemoCache = {};
 try {
-  interviewDemoCache = require('./public/interview-demo-cache.json');
+  interviewDemoCache = require('./interview-demo-cache.json');
 } catch (e) {
   try {
-    interviewDemoCache = require('../public/interview-demo-cache.json');
-  } catch {}
+    interviewDemoCache = require('./public/interview-demo-cache.json');
+  } catch (e2) {
+    try {
+      interviewDemoCache = require('../public/interview-demo-cache.json');
+    } catch {}
+  }
 }
 
 module.exports = {

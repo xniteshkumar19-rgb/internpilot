@@ -200,13 +200,27 @@ app.post('/api/gemini', async (req, res) => {
 // ==========================================
 let interviewEngine = null;
 try {
-  interviewEngine = require('./public/interview-engine.js');
+  interviewEngine = require('./interview-engine.js');
 } catch (e) {
-  console.warn('Could not load interview-engine.js:', e.message);
+  try {
+    interviewEngine = require('./public/interview-engine.js');
+  } catch (e2) {
+    console.warn('Could not load interview-engine.js:', e2.message);
+  }
 }
 
 // Sample test data for zero-filesystem execution
-// Sample data already initialized above
+let samplePostings = [];
+let sampleResume = '';
+let interviewDemoCache = {};
+try {
+  const sampleData = require('./sample-data');
+  samplePostings = sampleData.samplePostings || [];
+  sampleResume = sampleData.sampleResume || '';
+  interviewDemoCache = sampleData.interviewDemoCache || {};
+} catch (e) {
+  console.warn('Could not load sample-data.js:', e.message);
+}
 
 /**
  * Safe AI JSON Parser:
