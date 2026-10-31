@@ -1,0 +1,26 @@
+ROHAN SHARMA
+Email: rohan.sharma.student@example.com | Phone: +91 98765 01234
+Location: New Delhi, India | GitHub: github.com/rohan-sharma-dev
+
+OBJECTIVE
+Motivated first-year Computer Science undergraduate eager to apply foundational programming and web development skills in an internship role.
+
+EDUCATION
+Green Valley Institute of Technology
+Bachelor of Technology in Computer Science and Engineering (1st Year)
+Expected Graduation: 2028 | Current CGPA: 8.6 / 10
+
+TECHNICAL SKILLS
+- Languages: Python, JavaScript, HTML, CSS
+- Version Control: Git, GitHub
+- Soft Skills: Communication, Problem Solving, Team Collaboration
+
+PROJECTS
+Student Study Tracker (Web App)
+- Developed a lightweight, responsive task and revision tracker using HTML, CSS, and vanilla JavaScript.
+- Implemented localStorage to persist student daily tasks and subject schedules across browser sessions.
+- Maintained code versioning and commit history on GitHub using Git.
+
+ADDITIONAL ACTIVITIES
+- Active member of the College Open Source Coding Club.
+- Completed 30 Days of Python coding challenge.

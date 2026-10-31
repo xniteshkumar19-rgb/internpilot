@@ -534,19 +534,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 1. Populate sample posting dropdown from /api/test-postings
+  // 1. Populate sample posting dropdown from /api/test-postings (with fallback to /test-postings.json)
+  function renderPostings(postings) {
+    if (!Array.isArray(postings)) return;
+    testPostingsData = postings;
+    samplePostingSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+    postings.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = `[${p.label.toUpperCase()}] ${p.id}`;
+      samplePostingSelect.appendChild(opt);
+    });
+  }
+
   fetch("/api/test-postings")
-    .then(r => r.json())
-    .then(postings => {
-      testPostingsData = postings;
-      postings.forEach(p => {
-        const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = `[${p.label.toUpperCase()}] ${p.id}`;
-        samplePostingSelect.appendChild(opt);
-      });
+    .then(r => {
+      if (!r.ok) throw new Error("API status " + r.status);
+      return r.json();
     })
-    .catch(err => console.warn("Could not load test postings:", err));
+    .then(renderPostings)
+    .catch(() => {
+      fetch("/test-postings.json")
+        .then(r => r.json())
+        .then(renderPostings)
+        .catch(err => console.warn("Could not load test postings:", err));
+    });
 
   samplePostingSelect.addEventListener("change", (e) => {
     const selectedId = e.target.value;
@@ -557,13 +569,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  function fetchSampleResume() {
+    return fetch("/api/sample-resume")
+      .then(r => {
+        if (!r.ok) throw new Error("API status " + r.status);
+        return r.text();
+      })
+      .catch(() => fetch("/sample-resume.txt").then(r => r.text()));
+  }
+
   // Preload sample resume immediately for instant synchronous availability
-  fetch("/api/sample-resume")
-    .then(r => r.text())
+  fetchSampleResume()
     .then(text => { sampleResumeRaw = text; })
     .catch(() => {});
 
-  // 2. Populate sample resume button from /api/sample-resume
+  // 2. Populate sample resume button from /api/sample-resume (with fallback to /sample-resume.txt)
   loadResumeBtn.addEventListener("click", () => {
     if (sampleResumeRaw) {
       setResumeContent(sampleResumeRaw, "sample-resume.txt (Rohan Sharma)");
@@ -574,8 +594,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setResumeContent(sampleResumeRaw, "sample-resume.txt (Rohan Sharma)");
       return;
     }
-    fetch("/api/sample-resume")
-      .then(r => r.text())
+    fetchSampleResume()
       .then(text => {
         sampleResumeRaw = text;
         setResumeContent(text, "sample-resume.txt (Rohan Sharma)");

@@ -558,16 +558,31 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Sample test data for zero-filesystem serverless execution
+let samplePostings = [];
+let sampleResume = '';
+try {
+  const sampleData = require('./sample-data');
+  samplePostings = sampleData.samplePostings;
+  sampleResume = sampleData.sampleResume;
+} catch (e) {
+  console.warn('Could not load sample-data.js:', e.message);
+}
+
 // 2. GET /api/test-postings
 // Serves sample postings for dropdown testing
 app.get('/api/test-postings', (req, res) => {
   try {
+    if (Array.isArray(samplePostings) && samplePostings.length > 0) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.json(samplePostings);
+    }
     const postingsPath = resolveAssetPath('test-postings.json');
     const content = fs.readFileSync(postingsPath, 'utf8');
     res.setHeader('Content-Type', 'application/json');
-    res.send(content);
+    return res.send(content);
   } catch (err) {
-    console.error('Error reading test-postings.json:', err);
+    console.error('Error reading test-postings:', err);
     res.status(500).json({ error: 'Could not load test postings' });
   }
 });
@@ -576,12 +591,16 @@ app.get('/api/test-postings', (req, res) => {
 // Serves sample resume text
 app.get('/api/sample-resume', (req, res) => {
   try {
+    if (sampleResume) {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      return res.send(sampleResume);
+    }
     const resumePath = resolveAssetPath('sample-resume.txt');
     const content = fs.readFileSync(resumePath, 'utf8');
-    res.setHeader('Content-Type', 'text/plain');
-    res.send(content);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.send(content);
   } catch (err) {
-    console.error('Error reading sample-resume.txt:', err);
+    console.error('Error reading sample-resume:', err);
     res.status(500).json({ error: 'Could not load sample resume' });
   }
 });
