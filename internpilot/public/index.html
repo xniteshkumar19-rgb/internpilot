@@ -274,28 +274,46 @@
           <div id="source-stepper" class="source-stepper" style="display: none;">
             <div class="source-step-item" id="sf-step-1">
               <span class="step-num">1</span>
-              <span class="step-label">Reading posting</span>
+              <span class="step-label">Resolving submitted URL</span>
             </div>
             <div class="source-step-item" id="sf-step-2">
               <span class="step-num">2</span>
-              <span class="step-label">Identifying company & role</span>
+              <span class="step-label">Inspecting final destination</span>
             </div>
             <div class="source-step-item" id="sf-step-3">
               <span class="step-num">3</span>
-              <span class="step-label">Searching official sources</span>
+              <span class="step-label">Retrieving job posting</span>
             </div>
             <div class="source-step-item" id="sf-step-4">
               <span class="step-num">4</span>
-              <span class="step-label">Comparing job details</span>
+              <span class="step-label">Extracting available information</span>
             </div>
             <div class="source-step-item" id="sf-step-5">
               <span class="step-num">5</span>
-              <span class="step-label">Preparing report</span>
+              <span class="step-label">Preparing source search</span>
             </div>
           </div>
 
           <!-- Source Verification Results Container -->
           <div id="source-finder-result" class="source-finder-result" style="display: none;"></div>
+        </div>
+        <!-- ==========================================
+             FEATURE: AI INTERNSHIP AUTHENTICITY ASSESSMENT
+             ========================================== -->
+        <div class="card ai-authenticity-card" id="ai-authenticity-card" style="display: none; margin-top: 1.25rem;">
+          <div class="card-header">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 1.25rem;" aria-hidden="true">🛡️</span>
+                <div>
+                  <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #f1f5f9;">AI Internship Assessment</h3>
+                  <span class="card-subtitle" style="font-size: 0.78rem;">Objective authenticity indicators and verification checklist powered by Gemini AI</span>
+                </div>
+              </div>
+              <div id="ai-authenticity-badge-container"></div>
+            </div>
+          </div>
+          <div id="ai-authenticity-body" class="card-body"></div>
         </div>
 
         <!-- Resume Card with Drag-and-Drop & File Parsing -->

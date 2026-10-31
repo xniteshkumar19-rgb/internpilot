@@ -1947,8 +1947,126 @@ document.addEventListener("DOMContentLoaded", () => {
     const evidence = res.evidence || {};
 
     // -------------------------------------------------------------
-    // DEDICATED ERROR STATES (Invalid URL, Empty Input, Server Error)
+    // DEDICATED INACCESSIBLE STATE (LinkedIn Authwall, Generic Landing, Expired, Access Denied)
     // -------------------------------------------------------------
+    if (state === "JOB_POSTING_INACCESSIBLE") {
+      const reasonCode = res.inaccessibleReason || "LOGIN_REQUIRED";
+      const badgeTitles = {
+        LOGIN_REQUIRED: "🔒 LinkedIn Authentication Required",
+        GENERIC_LANDING_PAGE: "⚠ Platform Landing Page Detected",
+        JOB_EXPIRED: "⌛ Job Posting Expired",
+        ACCESS_DENIED: "🚫 Access Restricted",
+        CONTENT_UNAVAILABLE: "ℹ Content Unavailable",
+        IRRELEVANT_PAGE: "ℹ Irrelevant Content"
+      };
+
+      const badgeText = badgeTitles[reasonCode] || "Job Posting Inaccessible";
+      const headline = res.message || "We couldn't retrieve the complete job description from LinkedIn.";
+      const subExplanation = res.explanation || (evidence && evidence.explanation) || "Authentication is required to view this listing, or the link redirected to a generic platform landing page.";
+
+      sourceFinderResult.innerHTML = `
+        <div class="source-result-box source-result-state-D" style="border-left: 3px solid #f59e0b;">
+          <div class="source-result-badge-row">
+            <span class="source-badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);">
+              ${escapeHtml(badgeText)}
+            </span>
+          </div>
+
+          ${redirectHtml}
+
+          <div style="margin-top: 0.75rem;">
+            <div class="source-result-title" style="color: #f8fafc; font-size: 1.1rem; margin-bottom: 0.35rem;">
+              ${escapeHtml(headline)}
+            </div>
+            <p style="margin: 0.25rem 0 0 0; color: #94a3b8; font-size: 0.88rem; line-height: 1.5;">
+              ${escapeHtml(subExplanation)}
+            </p>
+
+            <div style="margin-top: 1rem; padding: 0.85rem 1rem; border-radius: 6px; background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.15);">
+              <div style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">
+                Why did this happen?
+              </div>
+              <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #94a3b8; line-height: 1.45;">
+                Short links (like <code>lnkd.in</code>) frequently redirect unauthenticated requests to the general LinkedIn homepage or sign-in wall. InternPilot strictly prevents fabricating missing company or job details. Enter the company and role details below to generate verified searches.
+              </p>
+            </div>
+
+            <!-- Manual Details Fallback Button & Drawer -->
+            <div style="margin-top: 1.1rem;">
+              <button type="button" id="btn-toggle-manual-paste" class="btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                Enter Company & Role Details Manually
+              </button>
+            </div>
+
+            <div id="manual-paste-drawer" style="display: block; margin-top: 1rem; padding: 1.15rem; border-radius: 8px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(99, 102, 241, 0.35);">
+              <div style="font-size: 0.92rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.35rem;">
+                Manual Internship Details & Targeted Search Fallback
+              </div>
+              <span style="display: block; font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.85rem;">
+                Provide the company and job title from your active browser tab. InternPilot will immediately generate verified Google and Bing search queries without inventing placeholder details.
+              </span>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.65rem; margin-bottom: 0.65rem;">
+                <div>
+                  <label for="manual-company-name" style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 0.25rem;">Company Name *</label>
+                  <input type="text" id="manual-company-name" class="source-url-input" style="width: 100%; box-sizing: border-box; font-size: 0.85rem; padding: 0.5rem 0.75rem;" placeholder="e.g. Apex Cloud Technologies" />
+                </div>
+                <div>
+                  <label for="manual-job-title" style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 0.25rem;">Internship / Job Title *</label>
+                  <input type="text" id="manual-job-title" class="source-url-input" style="width: 100%; box-sizing: border-box; font-size: 0.85rem; padding: 0.5rem 0.75rem;" placeholder="e.g. Junior Web Developer Intern" />
+                </div>
+                <div>
+                  <label for="manual-location" style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 0.25rem;">Location (optional)</label>
+                  <input type="text" id="manual-location" class="source-url-input" style="width: 100%; box-sizing: border-box; font-size: 0.85rem; padding: 0.5rem 0.75rem;" placeholder="e.g. Bengaluru, India or Remote" />
+                </div>
+              </div>
+
+              <div style="margin-bottom: 0.75rem;">
+                <label for="manual-job-text" style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 0.25rem;">
+                  Paste Complete Job Description Text (optional):
+                </label>
+                <textarea
+                  id="manual-job-text"
+                  class="source-url-input"
+                  style="width: 100%; height: 110px; font-family: inherit; font-size: 0.83rem; line-height: 1.45; resize: vertical; box-sizing: border-box;"
+                  placeholder="Paste the role responsibilities, requirements, and qualifications here..."></textarea>
+              </div>
+
+              <!-- Live Targeted Search Query Preview & Action Buttons -->
+              <div id="manual-search-actions-box" style="display: none; margin-top: 0.85rem; padding: 0.85rem; border-radius: 6px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(99, 102, 241, 0.35);">
+                <div style="font-size: 0.82rem; font-weight: 700; color: #a5b4fc; margin-bottom: 0.3rem;">Targeted Search Queries Generated:</div>
+                <div style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 0.65rem; word-break: break-word;">
+                  Query: <code id="manual-query-preview" style="color: #f8fafc; background: rgba(15, 23, 42, 0.85); padding: 0.2rem 0.45rem; border-radius: 4px; font-size: 0.82rem;"></code>
+                </div>
+                <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+                  <a href="#" target="_blank" rel="noopener noreferrer" class="btn-search-official" id="btn-manual-search-google">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Search Official Website (Google)
+                  </a>
+                  <a href="#" target="_blank" rel="noopener noreferrer" class="btn-search-official-secondary" id="btn-manual-search-bing">
+                    Search via Bing
+                  </a>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 0.6rem; margin-top: 0.85rem; flex-wrap: wrap;">
+                <button type="button" id="btn-submit-manual-job" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                  Generate Targeted Searches & Continue
+                </button>
+                <button type="button" id="btn-sample-manual-job" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                  Load Sample Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      attachManualPasteHandler();
+      renderAiAuthenticityAssessment(res.authenticityAssessment, res);
+      return;
+    }
     if (state === "INVALID_URL" || state === "SERVER_ERROR") {
       sourceFinderResult.innerHTML = `
         <div class="source-result-box source-result-state-D" style="border-left: 3px solid #ef4444;">
@@ -2050,11 +2168,24 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="source-result-title">${escapeHtml(roleName)} at ${escapeHtml(compName)}</div>
 
           <div class="source-result-meta">
-            ${info.location ? `<span><strong>Location:</strong> ${escapeHtml(info.location)}</span>` : ""}
-            ${info.stipend ? `<span><strong>Stipend:</strong> ${escapeHtml(info.stipend)}</span>` : ""}
-            ${info.duration ? `<span><strong>Duration:</strong> ${escapeHtml(info.duration)}</span>` : ""}
-            ${info.jobRefId ? `<span><strong>Job Ref ID:</strong> ${escapeHtml(info.jobRefId)}</span>` : ""}
+            <span><strong>Location:</strong> ${escapeHtml(info.location || "Not mentioned in job posting.")}</span>
+            <span><strong>Stipend:</strong> ${escapeHtml(info.stipend || "Not mentioned in job posting.")}</span>
+            <span><strong>Work Mode:</strong> ${escapeHtml(info.workMode || "Not mentioned in job posting.")}</span>
+            <span><strong>Duration:</strong> ${escapeHtml(info.duration || "Not mentioned in job posting.")}</span>
+            <span><strong>Job Ref ID:</strong> ${escapeHtml(info.jobRefId || "Not mentioned in job posting.")}</span>
+            ${info.applicationDeadline ? `<span><strong>Deadline:</strong> ${escapeHtml(info.applicationDeadline)}</span>` : ""}
             ${info.requiredSkills && info.requiredSkills.length > 0 ? `<span><strong>Skills:</strong> ${escapeHtml(info.requiredSkills.join(", "))}</span>` : ""}
+          </div>
+
+          <!-- Source Evidence Breakdown -->
+          <div class="source-evidence-card" style="margin-top: 0.75rem;">
+            <strong style="color: #5eead4; font-size: 0.85rem;">Source Evidence Verification:</strong>
+            <ul style="margin: 0.35rem 0 0 1.2rem; padding: 0; font-size: 0.8rem; color: #cbd5e1; line-height: 1.5;">
+              <li><strong>Company:</strong> ${escapeHtml(info.companyName || "Not identified")} ${evidence.companyName?.source ? `<span style="color: #94a3b8;">(${escapeHtml(evidence.companyName.source)})</span>` : ""}</li>
+              <li><strong>Job Title:</strong> ${escapeHtml(info.jobTitle || "Not identified")} ${evidence.jobTitle?.source ? `<span style="color: #94a3b8;">(${escapeHtml(evidence.jobTitle.source)})</span>` : ""}</li>
+              <li><strong>Location:</strong> ${escapeHtml(info.location || "Not mentioned in job posting.")} ${evidence.location?.source ? `<span style="color: #94a3b8;">(${escapeHtml(evidence.location.source)})</span>` : ""}</li>
+              <li><strong>Stipend:</strong> ${escapeHtml(info.stipend || "Not mentioned in job posting.")} ${evidence.stipend?.source ? `<span style="color: #94a3b8;">(${escapeHtml(evidence.stipend.source)})</span>` : ""}</li>
+            </ul>
           </div>
 
           <div class="assisted-explanation-card">
@@ -2072,13 +2203,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
           <!-- Direct Search Actions -->
           <div class="source-actions-row">
-            <a href="${escapeHtml(searchLinks.google)}" target="_blank" rel="noopener noreferrer" class="btn-search-official" id="btn-search-official-website">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              Search Official Website (Google)
-            </a>
-            <a href="${escapeHtml(searchLinks.bing)}" target="_blank" rel="noopener noreferrer" class="btn-search-official-secondary" id="btn-search-bing">
-              Search via Bing
-            </a>
+            ${searchLinks && searchLinks.google ? `
+              <a href="${escapeHtml(searchLinks.google)}" target="_blank" rel="noopener noreferrer" class="btn-search-official" id="btn-search-official-website">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Search Official Website (Google)
+              </a>
+              <a href="${escapeHtml(searchLinks.bing)}" target="_blank" rel="noopener noreferrer" class="btn-search-official-secondary" id="btn-search-bing">
+                Search via Bing
+              </a>
+            ` : `
+              <div style="font-size: 0.85rem; color: #f59e0b; padding: 0.5rem 0;">
+                ⚠ To generate verified Google & Bing search queries, please provide the company name and job title.
+              </div>
+            `}
           </div>
 
           <!-- Assisted Comparison Section -->
@@ -2186,9 +2323,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="source-result-title">${escapeHtml(roleName)} at ${escapeHtml(compName)}</div>
 
         <div class="source-result-meta">
-          ${info.location || official.location ? `<span><strong>Location:</strong> ${escapeHtml(official.location || info.location)}</span>` : ""}
-          ${info.stipend || official.stipend ? `<span><strong>Stipend:</strong> ${escapeHtml(official.stipend || info.stipend)}</span>` : ""}
-          ${info.jobRefId ? `<span><strong>Job Ref ID:</strong> ${escapeHtml(info.jobRefId)}</span>` : ""}
+          <span><strong>Location:</strong> ${escapeHtml(official.location || info.location || "Not mentioned in job posting.")}</span>
+          <span><strong>Stipend:</strong> ${escapeHtml(official.stipend || info.stipend || "Not mentioned in job posting.")}</span>
+          <span><strong>Work Mode:</strong> ${escapeHtml(official.workMode || info.workMode || "Not mentioned in job posting.")}</span>
+          <span><strong>Job Ref ID:</strong> ${escapeHtml(official.jobRefId || info.jobRefId || "Not mentioned in job posting.")}</span>
           ${official.sourceType ? `<span><strong>Source Type:</strong> ${escapeHtml(official.sourceType)}</span>` : ""}
         </div>
 
@@ -2209,10 +2347,15 @@ document.addEventListener("DOMContentLoaded", () => {
               View Original Posting
             </a>
           ` : ""}
-          <a href="${escapeHtml(searchLinks.google)}" target="_blank" rel="noopener noreferrer" class="btn-search-official" id="btn-search-official-website">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Search Official Website
-          </a>
+          ${searchLinks && searchLinks.google ? `
+            <a href="${escapeHtml(searchLinks.google)}" target="_blank" rel="noopener noreferrer" class="btn-search-official" id="btn-search-official-website">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              Search Official Website (Google)
+            </a>
+            <a href="${escapeHtml(searchLinks.bing)}" target="_blank" rel="noopener noreferrer" class="btn-search-official-secondary" id="btn-search-bing">
+              Search via Bing
+            </a>
+          ` : ""}
           <button type="button" class="btn-analyse-internship" id="btn-analyse-found-internship">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Analyse This Internship
@@ -2241,6 +2384,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     attachAssistedModeListeners(res.submittedUrl || sourceUrlInput?.value || "");
     wireAnalyseButton(official.jobTitle || info.jobTitle, official.companyName || info.companyName, official.location || info.location, official.stipend || info.stipend, info.requiredSkills, info.description);
+    renderAiAuthenticityAssessment(res.authenticityAssessment, res);
   }
 
   function wireAnalyseButton(title, company, location, stipend, skills, description) {
@@ -2266,6 +2410,256 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => runBtn.click(), 600);
       }
     });
+  }
+
+  function attachManualPasteHandler() {
+    const btnToggle = document.getElementById("btn-toggle-manual-paste");
+    const drawer = document.getElementById("manual-paste-drawer");
+    const btnSubmit = document.getElementById("btn-submit-manual-job");
+    const btnSample = document.getElementById("btn-sample-manual-job");
+    const manualCompInput = document.getElementById("manual-company-name");
+    const manualTitleInput = document.getElementById("manual-job-title");
+    const manualLocInput = document.getElementById("manual-location");
+    const manualTextInput = document.getElementById("manual-job-text");
+    const searchActionsBox = document.getElementById("manual-search-actions-box");
+    const queryPreview = document.getElementById("manual-query-preview");
+    const manualGoogleBtn = document.getElementById("btn-manual-search-google");
+    const manualBingBtn = document.getElementById("btn-manual-search-bing");
+
+    function updateManualSearchLinks() {
+      const comp = (manualCompInput ? manualCompInput.value : "").trim();
+      const title = (manualTitleInput ? manualTitleInput.value : "").trim();
+      const loc = (manualLocInput ? manualLocInput.value : "").trim();
+
+      // Check blocked terms or empty
+      const isBlockedComp = !comp || /by clicking continue|sign in|log in|join linkedin|terms of service|cookie policy/i.test(comp);
+      const isBlockedTitle = !title || /by clicking continue|sign in|log in|internship role|job title|terms of service/i.test(title);
+
+      if (!isBlockedComp && !isBlockedTitle && comp.length >= 2 && title.length >= 3) {
+        let q = `"${comp}" "${title}"`;
+        if (loc) q += ` ${loc}`;
+        q += ` careers`;
+
+        if (searchActionsBox) searchActionsBox.style.display = "block";
+        if (queryPreview) queryPreview.textContent = q;
+        const encoded = encodeURIComponent(q);
+        if (manualGoogleBtn) manualGoogleBtn.href = `https://www.google.com/search?q=${encoded}`;
+        if (manualBingBtn) manualBingBtn.href = `https://www.bing.com/search?q=${encoded}`;
+      } else {
+        if (searchActionsBox) searchActionsBox.style.display = "none";
+      }
+    }
+
+    if (manualCompInput) manualCompInput.addEventListener("input", updateManualSearchLinks);
+    if (manualTitleInput) manualTitleInput.addEventListener("input", updateManualSearchLinks);
+    if (manualLocInput) manualLocInput.addEventListener("input", updateManualSearchLinks);
+
+    if (btnToggle && drawer) {
+      btnToggle.addEventListener("click", () => {
+        drawer.style.display = drawer.style.display === "none" ? "block" : "none";
+        if (drawer.style.display === "block" && manualCompInput) {
+          manualCompInput.focus();
+        }
+      });
+    }
+
+    if (btnSample) {
+      btnSample.addEventListener("click", () => {
+        if (manualCompInput) manualCompInput.value = "Apex Cloud Technologies";
+        if (manualTitleInput) manualTitleInput.value = "Junior Web Developer Intern";
+        if (manualLocInput) manualLocInput.value = "Bengaluru, India";
+        if (manualTextInput) {
+          manualTextInput.value = `Apex Cloud Technologies is hiring for Junior Web Developer Intern!
+Location: Bengaluru, India (Hybrid)
+Stipend: ₹25,000 / month
+Duration: 6 Months
+Job ID: APEX-2026-DEV-04
+
+About the Role:
+We are looking for an ambitious Junior Web Developer Intern to join our cloud platform engineering team.
+You will assist in building scalable web dashboards, APIs, and student portals.
+
+Required Skills:
+- Strong proficiency in JavaScript (ES6+), React, HTML, CSS
+- Version control with Git and GitHub
+- Understanding of REST APIs and responsive web design`;
+        }
+        updateManualSearchLinks();
+        if (manualCompInput) manualCompInput.focus();
+      });
+    }
+
+    if (btnSubmit) {
+      btnSubmit.addEventListener("click", async () => {
+        const comp = (manualCompInput ? manualCompInput.value : "").trim();
+        const title = (manualTitleInput ? manualTitleInput.value : "").trim();
+        const loc = (manualLocInput ? manualLocInput.value : "").trim();
+        const text = (manualTextInput ? manualTextInput.value : "").trim();
+
+        if (!text && (!comp || !title)) {
+          alert("Please enter the Company Name and Internship Title, or paste the job description text.");
+          if (manualCompInput) manualCompInput.focus();
+          return;
+        }
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = `Extracting job details...`;
+
+        try {
+          const payloadText = text || `Company: ${comp}\nJob Title: ${title}${loc ? `\nLocation: ${loc}` : ''}`;
+          const resp = await fetch("/api/source-finder/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              manualText: payloadText,
+              companyName: comp,
+              jobTitle: title,
+              location: loc
+            })
+          });
+          const data = await resp.json();
+
+          // Transfer directly to CareerMatch posting input (#posting)
+          if (postingInput) {
+            postingInput.value = payloadText;
+          }
+          if (customRoleInput && (data.submittedInfo?.jobTitle || title)) {
+            customRoleInput.value = data.submittedInfo?.jobTitle || title;
+          }
+          if (customCompanyInput && (data.submittedInfo?.companyName || comp)) {
+            customCompanyInput.value = data.submittedInfo?.companyName || comp;
+          }
+
+          renderSourceFinderResult(data, null);
+        } catch (err) {
+          alert("Failed to process manual job details: " + err.message);
+        } finally {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = `Generate Targeted Searches & Continue`;
+        }
+      });
+    }
+  }
+
+  function renderAiAuthenticityAssessment(assessment, sourceRes) {
+    const card = document.getElementById("ai-authenticity-card");
+    const badgeContainer = document.getElementById("ai-authenticity-badge-container");
+    const body = document.getElementById("ai-authenticity-body");
+    if (!card || !badgeContainer || !body) return;
+
+    if (!assessment) {
+      card.style.display = "none";
+      return;
+    }
+
+    card.style.display = "block";
+
+    const status = assessment.status || "INSUFFICIENT_EVIDENCE";
+    const statusLabel = assessment.statusLabel || "Insufficient Evidence";
+
+    let badgeStyle = "background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.35);";
+    let badgeIcon = "ℹ";
+
+    if (status === "REASSURING_INDICATORS") {
+      badgeStyle = "background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4);";
+      badgeIcon = "✓";
+    } else if (status === "POTENTIAL_CONCERNS") {
+      badgeStyle = "background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4);";
+      badgeIcon = "⚠";
+    }
+
+    badgeContainer.innerHTML = `
+      <span class="source-badge" style="${badgeStyle} font-size: 0.82rem; padding: 0.25rem 0.65rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+        <span>${badgeIcon}</span> ${escapeHtml(statusLabel)}
+      </span>
+    `;
+
+    const summaryText = assessment.summary || "Complete job description required.";
+    const posList = Array.isArray(assessment.positiveIndicators) ? assessment.positiveIndicators : [];
+    const warnList = Array.isArray(assessment.potentialWarningSigns) ? assessment.potentialWarningSigns : [];
+    const evidenceList = Array.isArray(assessment.evidence) ? assessment.evidence : [];
+    const verifyList = Array.isArray(assessment.verifyNext) ? assessment.verifyNext : [];
+
+    body.innerHTML = `
+      <div style="padding: 0.5rem 0 0 0;">
+        <div style="font-size: 1rem; font-weight: 600; color: #f8fafc; margin-bottom: 0.75rem; line-height: 1.45;">
+          ${escapeHtml(summaryText)}
+        </div>
+
+        <!-- 4-Pillar Grounded Findings Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem 0.9rem; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.12);">
+            <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: #818cf8; font-weight: 700; margin-bottom: 0.25rem;">Company Identity</div>
+            <div style="font-size: 0.83rem; color: #cbd5e1; line-height: 1.45;">${escapeHtml(assessment.companyIdentityFindings || 'Not available')}</div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem 0.9rem; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.12);">
+            <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: #818cf8; font-weight: 700; margin-bottom: 0.25rem;">Original Source</div>
+            <div style="font-size: 0.83rem; color: #cbd5e1; line-height: 1.45;">${escapeHtml(assessment.originalSourceFindings || 'Not available')}</div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem 0.9rem; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.12);">
+            <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: #818cf8; font-weight: 700; margin-bottom: 0.25rem;">Job Description Consistency</div>
+            <div style="font-size: 0.83rem; color: #cbd5e1; line-height: 1.45;">${escapeHtml(assessment.jobDescriptionConsistency || 'Not available')}</div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 0.75rem 0.9rem; border-radius: 6px; border: 1px solid rgba(148, 163, 184, 0.12);">
+            <div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: #818cf8; font-weight: 700; margin-bottom: 0.25rem;">Recruiter & Contact Channels</div>
+            <div style="font-size: 0.83rem; color: #cbd5e1; line-height: 1.45;">${escapeHtml(assessment.recruiterFindings || 'Not available')}</div>
+          </div>
+        </div>
+
+        ${posList.length > 0 ? `
+          <div style="margin-bottom: 0.85rem; padding: 0.75rem 0.9rem; border-radius: 6px; background: rgba(16, 185, 129, 0.07); border: 1px solid rgba(52, 211, 153, 0.2);">
+            <div style="font-size: 0.82rem; font-weight: 700; color: #34d399; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+              <span>✓</span> Positive Indicators
+            </div>
+            <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.82rem; color: #e2e8f0; line-height: 1.5;">
+              ${posList.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${warnList.length > 0 ? `
+          <div style="margin-bottom: 0.85rem; padding: 0.75rem 0.9rem; border-radius: 6px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(251, 191, 36, 0.25);">
+            <div style="font-size: 0.82rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+              <span>⚠</span> Potential Warning Signs
+            </div>
+            <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.82rem; color: #fde68a; line-height: 1.5;">
+              ${warnList.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${evidenceList.length > 0 ? `
+          <div style="margin-bottom: 0.85rem; padding: 0.75rem 0.9rem; border-radius: 6px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.15);">
+            <div style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; margin-bottom: 0.35rem;">
+              Evidence Behind Findings:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+              ${evidenceList.map(e => `
+                <div style="font-size: 0.78rem; color: #cbd5e1; display: flex; gap: 0.4rem;">
+                  <span style="color: #6366f1;">•</span>
+                  <span>${escapeHtml(e.fact || e)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${verifyList.length > 0 ? `
+          <div style="margin-bottom: 0.85rem; padding: 0.75rem 0.9rem; border-radius: 6px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25);">
+            <div style="font-size: 0.82rem; font-weight: 700; color: #a5b4fc; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.4rem;">
+              <span>🔍</span> What You Should Verify Next:
+            </div>
+            <ul style="margin: 0; padding-left: 1.2rem; font-size: 0.82rem; color: #e2e8f0; line-height: 1.5;">
+              ${verifyList.map(step => `<li>${escapeHtml(step)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        <div style="margin-top: 0.65rem; font-size: 0.75rem; color: #64748b; line-height: 1.45; border-top: 1px solid rgba(148, 163, 184, 0.1); padding-top: 0.5rem;">
+          <strong>Authenticity Guidance:</strong> InternPilot provides evidence-based heuristic analysis. A missing official listing does not prove fraud, and a professional website does not prove legitimacy. Never send money, pay registration fees, or share private banking credentials for an internship.
+        </div>
+      </div>
+    `;
   }
 
   function attachAssistedModeListeners(submittedUrl) {
@@ -2504,6 +2898,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Visible in-progress state immediately
+    const authCard = document.getElementById("ai-authenticity-card");
+    if (authCard) authCard.style.display = "none";
+
     if (sourceFinderResult) {
       sourceFinderResult.style.display = "block";
       sourceFinderResult.innerHTML = `
@@ -2561,25 +2958,25 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Step 2: Extracting job information
+    // Step 2: Inspecting final destination
     setStepperStep(2);
     const progressMsg = document.getElementById("sf-live-progress-msg");
-    if (progressMsg) progressMsg.textContent = "Extracting job title, company & requirements...";
+    if (progressMsg) progressMsg.textContent = "Inspecting final destination & platform type...";
     if (btnFindSource) {
       btnFindSource.innerHTML = `
         <span class="spinner-inline" style="display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,0.2); border-top-color:#042f2e; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
-        <span>Extracting info...</span>
+        <span>Inspecting destination...</span>
       `;
     }
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 250));
 
-    // Step 3: Searching
+    // Step 3: Retrieving job posting
     setStepperStep(3);
-    if (progressMsg) progressMsg.textContent = "Checking verified official careers sources & ATS domains...";
+    if (progressMsg) progressMsg.textContent = "Retrieving job posting content safely under SSRF protections...";
     if (btnFindSource) {
       btnFindSource.innerHTML = `
         <span class="spinner-inline" style="display:inline-block; width:13px; height:13px; border:2px solid rgba(0,0,0,0.2); border-top-color:#042f2e; border-radius:50%; animation: spin 0.8s linear infinite;"></span>
-        <span>Searching sources...</span>
+        <span>Retrieving posting...</span>
       `;
     }
 
@@ -2590,15 +2987,15 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ url: trimmedUrl, isDemo, finalUrl: redirectData.finalUrl })
       });
 
-      // Step 4: Comparing
+      // Step 4: Extracting available information
       setStepperStep(4);
-      if (progressMsg) progressMsg.textContent = "Comparing role details and matching evidence...";
-      await new Promise(r => setTimeout(r, 250));
-
-      // Step 5: Preparing Report
-      setStepperStep(5);
-      if (progressMsg) progressMsg.textContent = "Preparing verification report...";
+      if (progressMsg) progressMsg.textContent = "Extracting grounded metadata & evidence...";
       await new Promise(r => setTimeout(r, 200));
+
+      // Step 5: Preparing source search
+      setStepperStep(5);
+      if (progressMsg) progressMsg.textContent = "Preparing targeted official careers search queries...";
+      await new Promise(r => setTimeout(r, 150));
 
       if (!resp.ok) {
         let errData = {};

@@ -15,7 +15,7 @@ const https = require('https');
 const dns = require('dns').promises;
 const { URL } = require('url');
 
-const MAX_REDIRECTS = 3;
+const MAX_REDIRECTS = 5;
 const MAX_BYTES = 512 * 1024; // 512 KB
 const TIMEOUT_MS = 7000;      // 7 seconds
 
@@ -184,21 +184,50 @@ async function validateUrlForSSRF(urlString, options = {}) {
  * - Streaming size limit (max 512KB)
  * - Strict timeout (7s)
  */
-function safeFetchUrl(urlString, redirectCount = 0, visited = new Set()) {
+function safeFetchUrl(urlString, redirectCount = 0, visited = new Set(), chain = [], options = {}) {
   return new Promise(async (resolve, reject) => {
+    // If mockFetch provided in options, use it
+    if (options && options.mockFetch) {
+      try {
+        const mockResult = typeof options.mockFetch === 'function' ? await options.mockFetch(urlString) : options.mockFetch[urlString] || options.mockFetch['*'];
+        if (mockResult) {
+          if (mockResult.error) {
+            const err = new Error(mockResult.error);
+            if (mockResult.statusCode) err.statusCode = mockResult.statusCode;
+            return reject(err);
+          }
+          return resolve({
+            statusCode: mockResult.statusCode || 200,
+            finalUrl: mockResult.finalUrl || urlString,
+            contentType: mockResult.contentType || 'text/html',
+            body: mockResult.body || '',
+            chain: mockResult.chain || chain
+          });
+        }
+      } catch (mockErr) {
+        return reject(mockErr);
+      }
+    }
+
     if (redirectCount > MAX_REDIRECTS) {
-      return reject(new Error(`Too many redirects (exceeded limit of ${MAX_REDIRECTS}).`));
+      const err = new Error(`Too many redirects (exceeded limit of ${MAX_REDIRECTS}).`);
+      err.code = 'TOO_MANY_REDIRECTS';
+      return reject(err);
     }
 
     if (visited.has(urlString)) {
-      return reject(new Error('Redirect loop detected.'));
+      const err = new Error('Redirect loop detected.');
+      err.code = 'REDIRECT_LOOP';
+      return reject(err);
     }
     visited.add(urlString);
 
     // SSRF Check on current URL (and every redirect URL)
-    const ssrfCheck = await validateUrlForSSRF(urlString);
+    const ssrfCheck = await validateUrlForSSRF(urlString, options);
     if (!ssrfCheck.valid) {
-      return reject(new Error(`SSRF Blocked: ${ssrfCheck.error}`));
+      const err = new Error(`SSRF Blocked: ${ssrfCheck.error}`);
+      err.code = 'SSRF_BLOCKED';
+      return reject(err);
     }
 
     const { parsedUrl } = ssrfCheck;
@@ -242,16 +271,20 @@ function safeFetchUrl(urlString, redirectCount = 0, visited = new Set()) {
           // Resolve relative redirect against base URL
           redirectTarget = new URL(redirectTarget, urlString).toString();
         } catch (e) {
-          return reject(new Error('Invalid redirect location: ' + res.headers.location));
+          const err = new Error('Invalid redirect location: ' + res.headers.location);
+          err.code = 'INVALID_REDIRECT';
+          return reject(err);
         }
 
-        // Recursively fetch redirect target with individual validation
-        return resolve(safeFetchUrl(redirectTarget, redirectCount + 1, visited));
-      }
+        chain.push({
+          url: urlString,
+          status: res.statusCode,
+          target: redirectTarget,
+          domain: parsedUrl.hostname
+        });
 
-      if (res.statusCode < 200 || res.statusCode >= 400) {
-        req.destroy();
-        return reject(new Error(`HTTP error ${res.statusCode} from server.`));
+        // Recursively fetch redirect target with individual validation
+        return resolve(safeFetchUrl(redirectTarget, redirectCount + 1, visited, chain, options));
       }
 
       let totalBytes = 0;
@@ -261,18 +294,39 @@ function safeFetchUrl(urlString, redirectCount = 0, visited = new Set()) {
         totalBytes += chunk.length;
         if (totalBytes > MAX_BYTES) {
           req.destroy();
-          return reject(new Error(`Response exceeded maximum size limit of ${MAX_BYTES / 1024} KB.`));
+          const err = new Error(`Response exceeded maximum size limit of ${MAX_BYTES / 1024} KB.`);
+          err.code = 'MAX_BYTES_EXCEEDED';
+          return reject(err);
         }
         chunks.push(chunk);
       });
 
       res.on('end', () => {
         const buffer = Buffer.concat(chunks);
+        const body = buffer.toString('utf8');
+
+        if (res.statusCode < 200 || res.statusCode >= 400) {
+          const err = new Error(`HTTP error ${res.statusCode} from server.`);
+          err.statusCode = res.statusCode;
+          err.code = 'HTTP_ERROR';
+          err.body = body;
+          err.finalUrl = urlString;
+          return reject(err);
+        }
+
+        chain.push({
+          url: urlString,
+          status: res.statusCode,
+          domain: parsedUrl.hostname
+        });
+
         resolve({
           statusCode: res.statusCode,
           finalUrl: urlString,
+          finalDomain: parsedUrl.hostname,
           contentType: res.headers['content-type'] || '',
-          body: buffer.toString('utf8')
+          body,
+          chain
         });
       });
 

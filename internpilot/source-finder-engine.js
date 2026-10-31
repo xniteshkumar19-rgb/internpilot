@@ -16,6 +16,21 @@
 const { URL } = require('url');
 const { safeFetchUrl, sanitizeWebpageText, validateUrlForSSRF } = require('./source-finder-security');
 const { executeWebSearch, getSearchStatus } = require('./search-adapter');
+const {
+  NOT_MENTIONED,
+  extractGroundedJobInfo,
+  detectJobPageType,
+  isLinkedInJobUrl,
+  isLinkedInGenericUrl,
+  isGenericAggregatorLanding,
+  generateCompanySearchQueries
+} = require('./job-extraction-engine');
+const {
+  assessJobAuthenticity,
+  evaluateAuthenticityOffline,
+  AUTHENTICITY_STATES,
+  STATE_LABELS
+} = require('./authenticity-engine');
 
 // Known 3rd-party job aggregators & boards
 const THIRD_PARTY_JOB_BOARDS = [
@@ -94,111 +109,35 @@ function isVerifiedATS(hostname) {
 }
 
 /**
- * Rule-based fallback extractor for job information from raw posting text.
+ * Grounded extractor for job information from posting text or HTML.
+ * Ensures strict evidence backing, rejects generic platform text, and never invents missing fields.
  */
-function extractJobInfoFromText(text, fallbackUrl = '') {
+function extractJobInfoFromText(text, fallbackUrl = '', isManual = false) {
   const str = String(text || '');
-  const info = {
-    companyName: '',
-    jobTitle: '',
-    location: '',
-    description: '',
-    requiredSkills: [],
-    preferredSkills: [],
-    stipend: '',
-    duration: '',
-    jobRefId: '',
+  const grounded = extractGroundedJobInfo(str, fallbackUrl, isManual);
+
+  return {
+    companyName: grounded.companyName !== NOT_MENTIONED ? grounded.companyName : '',
+    jobTitle: grounded.jobTitle !== NOT_MENTIONED ? grounded.jobTitle : '',
+    location: grounded.location !== NOT_MENTIONED ? grounded.location : '',
+    workMode: grounded.workMode !== NOT_MENTIONED ? grounded.workMode : '',
+    description: grounded.jobDescription || str.slice(0, 3000),
+    requiredSkills: grounded.requiredSkills || [],
+    preferredSkills: grounded.preferredSkills || [],
+    stipend: grounded.stipend !== NOT_MENTIONED ? grounded.stipend : '',
+    duration: grounded.duration !== NOT_MENTIONED ? grounded.duration : '',
+    jobRefId: grounded.jobRefId !== NOT_MENTIONED ? grounded.jobRefId : '',
     publicationDate: '',
-    applicationDeadline: ''
+    applicationDeadline: grounded.applicationDeadline !== NOT_MENTIONED ? grounded.applicationDeadline : '',
+    evidence: grounded.evidence || {}
   };
-
-  // Job Title extraction
-  const titlePatterns = [
-    /(?:role|job title|position|hiring for|opening for)[\s:]+([^\n\r,]{3,60})/i,
-    /^([A-Z][A-Za-z0-9\s\/\-]{4,50}\s+(?:Intern|Internship|Trainee|Engineer|Developer|Associate))/m,
-    /(?:Job Title|Title)\s*[:\-]\s*([^\n\r]+)/i
-  ];
-  for (const p of titlePatterns) {
-    const m = str.match(p);
-    if (m && m[1]) {
-      info.jobTitle = m[1].trim();
-      break;
-    }
-  }
-
-  // Company Name extraction
-  const compPatterns = [
-    /(?:company|organization|at|employer)\s*[:\-]\s*([^\n\r,]{2,50})/i,
-    /([A-Z][A-Za-z0-9\s]{2,40}(?:Technologies|Labs|Systems|Solutions|Corp|Inc|Pvt|Ltd|Services))\s+(?:is hiring|is looking|welcomes)/i,
-    /about\s+([A-Z][A-Za-z0-9\s]{2,40}(?:Technologies|Labs|Systems|Solutions|Corp|Inc|Pvt|Ltd|Services))/i,
-    /(?:Welcome to|Join)\s+([A-Z][A-Za-z0-9\s]{2,40})/i
-  ];
-  for (const p of compPatterns) {
-    const m = str.match(p);
-    if (m && m[1]) {
-      info.companyName = m[1].trim();
-      break;
-    }
-  }
-
-  // Location extraction
-  const locMatch = str.match(/(?:location|workplace|work location)\s*[:\-]\s*([^\n\r,]{3,50})/i) ||
-                   str.match(/\b(Remote|Hybrid|Bangalore|Bengaluru|San Francisco|New York|London|Delhi|Noida|Gurgaon|Hyderabad|Mumbai|Pune)\b/i);
-  if (locMatch) info.location = (locMatch[1] || locMatch[0]).trim();
-
-  // Job Ref ID
-  const idMatch = str.match(/(?:Job ID|Ref ID|Req ID|Requisition ID|Reference Code|ID)\s*[:#\-]?\s*([A-Za-z0-9\-]{4,25})/i);
-  if (idMatch) info.jobRefId = idMatch[1].trim();
-
-  // Stipend / Compensation
-  const stipendMatch = str.match(/(?:stipend|salary|compensation|pay)\s*[:\-]?\s*([^\n\r]{3,40})/i) ||
-                       str.match(/(?:₹|\$|£|€|INR|USD)\s*[\d,]+(?:\s*-\s*[\d,]+)?(?:\s*\/\s*(?:month|mo|hr|year))?/i);
-  if (stipendMatch) info.stipend = (stipendMatch[1] || stipendMatch[0]).trim();
-
-  // Duration
-  const durMatch = str.match(/(?:duration|internship period|period)\s*[:\-]?\s*(\d+\s*(?:months?|weeks?|mo))/i);
-  if (durMatch) info.duration = durMatch[1].trim();
-
-  // Deadline
-  const deadMatch = str.match(/(?:deadline|apply by|last date to apply)\s*[:\-]?\s*([^\n\r,]{4,35})/i);
-  if (deadMatch) info.applicationDeadline = deadMatch[1].trim();
-
-  // Extract skills (common technologies)
-  const commonTech = [
-    'javascript', 'typescript', 'react', 'python', 'node.js', 'html', 'css',
-    'docker', 'aws', 'git', 'sql', 'postgres', 'mongodb', 'graphql', 'java',
-    'c++', 'kubernetes', 'linux', 'ci/cd', 'rest api', 'next.js', 'vue', 'tailwind'
-  ];
-  const lower = str.toLowerCase();
-  for (const tech of commonTech) {
-    const escaped = tech.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    if (new RegExp('\\b' + escaped + '\\b', 'i').test(lower)) {
-      info.requiredSkills.push(tech);
-    }
-  }
-
-  info.description = str.slice(0, 3000);
-  return info;
 }
 
 /**
  * Generates targeted Google and Bing search URLs from extracted job metadata.
  */
-function generateSearchLinks(companyName, jobTitle) {
-  const comp = (companyName || '').trim();
-  const title = (jobTitle || '').trim();
-  const parts = [];
-  if (comp) parts.push(`"${comp}"`);
-  if (title) parts.push(`"${title}"`);
-  parts.push('careers');
-  const query = parts.join(' ');
-  const encoded = encodeURIComponent(query);
-
-  return {
-    query,
-    google: `https://www.google.com/search?q=${encoded}`,
-    bing: `https://www.bing.com/search?q=${encoded}`
-  };
+function generateSearchLinks(companyName, jobTitle, location = '', jobRefId = '') {
+  return generateCompanySearchQueries(companyName, jobTitle, location, jobRefId);
 }
 
 /**
@@ -331,6 +270,48 @@ const DEMO_SCENARIOS = {
 async function verifyInternshipSource(postingUrl, options = {}) {
   const isDemo = Boolean(options.isDemo);
   const rawHtml = options.rawHtml || null;
+  const manualText = options.manualText || null;
+  const finalUrlOption = options.finalUrl || null;
+
+  // 0. Manual Text Submission Handoff (Always supported!)
+  if (manualText && typeof manualText === 'string' && manualText.trim()) {
+    const extractedInfo = extractJobInfoFromText(manualText, postingUrl || 'manual-input', true);
+    const searchLinks = generateSearchLinks(
+      extractedInfo.companyName,
+      extractedInfo.jobTitle,
+      extractedInfo.location,
+      extractedInfo.jobRefId
+    );
+    const authenticityAssessment = evaluateAuthenticityOffline({
+      companyName: extractedInfo.companyName,
+      jobTitle: extractedInfo.jobTitle,
+      location: extractedInfo.location,
+      stipend: extractedInfo.stipend,
+      duration: extractedInfo.duration,
+      jobDescription: extractedInfo.description,
+      postingUrl: postingUrl || 'Manual Input',
+      isDemo
+    });
+
+    return {
+      success: true,
+      mode: 'assisted',
+      state: (extractedInfo.companyName && extractedInfo.jobTitle) ? 'JOB_POSTING_EXTRACTED' : 'PARTIALLY_EXTRACTED',
+      label: (extractedInfo.companyName && extractedInfo.jobTitle) ? 'Job Posting Extracted' : 'Partially Extracted',
+      submittedUrl: postingUrl || 'Manual Input',
+      finalUrl: postingUrl || 'Manual Input',
+      isManual: true,
+      submittedInfo: extractedInfo,
+      extractedJobInfo: extractedInfo,
+      searchLinks,
+      authenticityAssessment,
+      evidence: {
+        sourceUrl: 'Manually provided job description',
+        explanation: 'Job information extracted from student-provided description text. Search queries generated for official careers verification.',
+        ...extractedInfo.evidence
+      }
+    };
+  }
 
   // Handle DEMO MODE routing first (works 100% offline without network or DNS)
   if (isDemo) {
@@ -347,11 +328,15 @@ async function verifyInternshipSource(postingUrl, options = {}) {
   }
 
   // Step 1: Validate URL & check SSRF safety (Live mode)
-  const ssrfCheck = await validateUrlForSSRF(postingUrl, { skipDns: Boolean(rawHtml) });
+  const ssrfCheck = await validateUrlForSSRF(postingUrl, {
+    skipDns: Boolean(rawHtml || options.skipDns || options.finalUrl || options.mockFetch)
+  });
   if (!ssrfCheck.valid) {
     return {
       success: false,
       state: 'UNABLE_TO_VERIFY',
+      qualityState: 'INVALID_URL',
+      code: 'blocked_destination',
       label: 'Unable to Verify',
       error: `Security Validation Failed: ${ssrfCheck.error}`,
       evidence: {
@@ -362,22 +347,103 @@ async function verifyInternshipSource(postingUrl, options = {}) {
     };
   }
 
-  // LIVE MODE
-  // Step 1: Fetch submitted posting
+  // Step 2: Check if candidate final URL is already a generic platform page or authwall
+  const candidateFinalUrl = finalUrlOption || postingUrl;
+  if (isGenericAggregatorLanding(candidateFinalUrl) && !rawHtml) {
+    return {
+      success: false,
+      state: 'JOB_POSTING_INACCESSIBLE',
+      label: 'Job Posting Inaccessible',
+      inaccessibleReason: 'GENERIC_LANDING_PAGE',
+      message: "We couldn't retrieve the complete job description from LinkedIn.",
+      explanation: `The submitted link resolved to a platform landing page or homepage (${candidateFinalUrl}) rather than a specific job posting.`,
+      submittedUrl: postingUrl,
+      finalUrl: candidateFinalUrl,
+      canPasteManually: true,
+      evidence: {
+        sourceUrl: postingUrl,
+        finalUrl: candidateFinalUrl,
+        reason: 'The link redirected to a generic platform landing page or login wall without job view access.',
+        explanation: "We couldn't retrieve the complete job description from LinkedIn."
+      }
+    };
+  }
+
+  // Step 3: Fetch submitted posting
   let pageText = '';
+  let rawBody = '';
+  let actualFinalUrl = candidateFinalUrl;
+  let statusCode = 200;
+
   try {
     if (rawHtml) {
+      rawBody = rawHtml;
       pageText = sanitizeWebpageText(rawHtml);
+      statusCode = options.statusCode || 200;
     } else {
-      const fetchResult = await safeFetchUrl(postingUrl);
+      const fetchResult = await safeFetchUrl(postingUrl, 0, new Set(), [], options);
+      rawBody = fetchResult.body;
       pageText = sanitizeWebpageText(fetchResult.body);
+      actualFinalUrl = fetchResult.finalUrl || actualFinalUrl;
+      statusCode = fetchResult.statusCode || 200;
     }
   } catch (fetchErr) {
+    if (fetchErr.code === 'REDIRECT_LOOP') {
+      return {
+        success: false,
+        state: 'INVALID_URL',
+        code: 'redirect_loop',
+        label: 'Redirect Loop Detected',
+        error: 'Redirect loop detected.',
+        evidence: { sourceUrl: postingUrl, explanation: 'Redirect loop detected.' }
+      };
+    }
+    if (fetchErr.code === 'SSRF_BLOCKED' || (fetchErr.message && fetchErr.message.includes('SSRF'))) {
+      return {
+        success: false,
+        state: 'INVALID_URL',
+        code: 'blocked_destination',
+        label: 'Destination Blocked',
+        error: fetchErr.message,
+        evidence: { sourceUrl: postingUrl, explanation: fetchErr.message }
+      };
+    }
+    if (fetchErr.statusCode === 404 || fetchErr.statusCode === 410) {
+      return {
+        success: false,
+        state: 'JOB_POSTING_INACCESSIBLE',
+        inaccessibleReason: 'JOB_EXPIRED',
+        label: 'Job Posting Inaccessible',
+        message: 'This job posting has expired or is no longer available.',
+        explanation: 'The web server returned HTTP 404/410 Not Found.',
+        submittedUrl: postingUrl,
+        finalUrl: actualFinalUrl,
+        canPasteManually: true,
+        evidence: { sourceUrl: postingUrl, explanation: 'This job posting has expired or is no longer available.' }
+      };
+    }
+    if (fetchErr.statusCode === 403 || fetchErr.statusCode === 429) {
+      return {
+        success: false,
+        state: 'JOB_POSTING_INACCESSIBLE',
+        inaccessibleReason: 'ACCESS_DENIED',
+        label: 'Job Posting Inaccessible',
+        message: 'Access to this job posting was restricted by the host website.',
+        explanation: `The server returned HTTP ${fetchErr.statusCode} Access Denied.`,
+        submittedUrl: postingUrl,
+        finalUrl: actualFinalUrl,
+        canPasteManually: true,
+        evidence: { sourceUrl: postingUrl, explanation: 'Access restricted by host.' }
+      };
+    }
     return {
       success: false,
       state: 'UNABLE_TO_VERIFY',
       label: 'Unable to Verify',
       error: `Could not safely retrieve submitted posting: ${fetchErr.message}`,
+      submittedUrl: postingUrl,
+      finalUrl: actualFinalUrl,
+      canPasteManually: true,
       evidence: {
         sourceUrl: postingUrl,
         reason: fetchErr.message,
@@ -386,40 +452,112 @@ async function verifyInternshipSource(postingUrl, options = {}) {
     };
   }
 
-  // Step 2: Extract job info from page text
-  const extractedInfo = extractJobInfoFromText(pageText, postingUrl);
-  if (!extractedInfo.companyName && !extractedInfo.jobTitle) {
+  // Step 4: Inspect page type (Detect Login, Expired, Access Denied, or Generic Landing)
+  const pageTypeResult = detectJobPageType(rawBody, actualFinalUrl, statusCode);
+  if (!pageTypeResult.accessible) {
+    const authAssessment = evaluateAuthenticityOffline({
+      inaccessible: true,
+      inaccessibleReason: pageTypeResult.type,
+      postingUrl
+    });
     return {
       success: false,
-      state: 'UNABLE_TO_VERIFY',
-      label: 'Unable to Verify',
+      state: 'JOB_POSTING_INACCESSIBLE',
+      label: 'Job Posting Inaccessible',
+      inaccessibleReason: pageTypeResult.type,
+      message: pageTypeResult.message || "We couldn't retrieve the complete job description from LinkedIn.",
+      explanation: pageTypeResult.reason,
+      submittedUrl: postingUrl,
+      finalUrl: actualFinalUrl,
+      canPasteManually: true,
+      searchLinks: { valid: false, needsManualInput: true, reason: pageTypeResult.reason, query: '', google: null, bing: null },
+      authenticityAssessment: authAssessment,
       evidence: {
         sourceUrl: postingUrl,
+        finalUrl: actualFinalUrl,
+        reason: pageTypeResult.reason,
+        explanation: pageTypeResult.message || "We couldn't retrieve the complete job description from LinkedIn."
+      }
+    };
+  }
+
+  // Step 5: Extract grounded job info from page body & HTML
+  const extractedInfo = extractJobInfoFromText(rawBody, actualFinalUrl);
+  if (!extractedInfo.companyName && !extractedInfo.jobTitle) {
+    const authAssessment = evaluateAuthenticityOffline({
+      inaccessible: true,
+      inaccessibleReason: 'CONTENT_UNAVAILABLE',
+      postingUrl
+    });
+    return {
+      success: false,
+      state: 'JOB_POSTING_INACCESSIBLE',
+      label: 'Job Posting Inaccessible',
+      inaccessibleReason: 'CONTENT_UNAVAILABLE',
+      message: 'Could not extract genuine company name or job title from this webpage.',
+      explanation: 'The webpage did not contain recognizable job posting elements.',
+      submittedUrl: postingUrl,
+      finalUrl: actualFinalUrl,
+      canPasteManually: true,
+      searchLinks: { valid: false, needsManualInput: true, reason: 'Could not reliably identify company name or job title.', query: '', google: null, bing: null },
+      authenticityAssessment: authAssessment,
+      evidence: {
+        sourceUrl: postingUrl,
+        finalUrl: actualFinalUrl,
         explanation: 'Could not reliably identify company name or job title from the provided webpage text.'
       }
     };
   }
 
-  // Step 3: Check search provider status
+  // Generate targeted Google & Bing search queries
+  const searchLinks = generateSearchLinks(
+    extractedInfo.companyName,
+    extractedInfo.jobTitle,
+    extractedInfo.location,
+    extractedInfo.jobRefId
+  );
+
+  // Quality classification
+  const isPartiallyExtracted = !extractedInfo.companyName || !extractedInfo.jobTitle || !extractedInfo.location;
+  const extractionQualityState = isPartiallyExtracted ? 'PARTIALLY_EXTRACTED' : 'JOB_POSTING_EXTRACTED';
+  const extractionQualityLabel = isPartiallyExtracted ? 'Partially Extracted' : 'Job Posting Extracted';
+
+  // Step 6: Check search provider status
   const searchStatus = getSearchStatus();
   if (!searchStatus.configured || options.mode === 'assisted') {
-    const searchLinks = generateSearchLinks(extractedInfo.companyName, extractedInfo.jobTitle);
+    const authAssessment = evaluateAuthenticityOffline({
+      companyName: extractedInfo.companyName,
+      jobTitle: extractedInfo.jobTitle,
+      location: extractedInfo.location,
+      stipend: extractedInfo.stipend,
+      duration: extractedInfo.duration,
+      jobDescription: extractedInfo.description,
+      postingUrl
+    });
     return {
       success: true,
       mode: 'assisted',
       state: 'ASSISTED_READY',
+      qualityState: extractionQualityState,
+      extractionState: extractionQualityState,
       label: 'Assisted Source Verification Ready',
+      qualityLabel: extractionQualityLabel,
       searchConfigured: Boolean(searchStatus.configured),
       searchConfigMessage: searchStatus.message,
       requiredEnvVars: searchStatus.requiredEnvVars,
       submittedUrl: postingUrl,
+      finalUrl: actualFinalUrl,
       submittedInfo: extractedInfo,
       extractedJobInfo: extractedInfo,
       searchLinks: searchLinks,
+      authenticityAssessment: authAssessment,
+      canPasteManually: true,
       assistedNotice: 'No external search API required. InternPilot has extracted the role information and prepared direct search links. You can search the official website and paste the discovered posting below to verify matching details.',
       evidence: {
         sourceUrl: postingUrl,
-        explanation: `Extracted job information for "${extractedInfo.companyName || 'Company'}" - "${extractedInfo.jobTitle || 'Role'}". Search queries generated for Google and Bing to assist manual inspection.`
+        finalUrl: actualFinalUrl,
+        explanation: `Extracted job information for "${extractedInfo.companyName || 'Company'}" - "${extractedInfo.jobTitle || 'Role'}". Search queries generated for Google and Bing to assist manual inspection.`,
+        ...extractedInfo.evidence
       }
     };
   }
@@ -530,6 +668,24 @@ function formatVerificationResponse(submittedUrl, submittedInfo, officialInfo, s
     'UNABLE_TO_VERIFY': 'Unable to Verify'
   };
 
+  const searchLinks = generateSearchLinks(
+    submittedInfo?.companyName,
+    submittedInfo?.jobTitle,
+    submittedInfo?.location,
+    submittedInfo?.jobRefId
+  );
+  const authenticityAssessment = evaluateAuthenticityOffline({
+    companyName: submittedInfo?.companyName,
+    jobTitle: submittedInfo?.jobTitle,
+    location: submittedInfo?.location,
+    stipend: submittedInfo?.stipend,
+    duration: submittedInfo?.duration,
+    jobDescription: submittedInfo?.description || evidence?.explanation || '',
+    officialCandidate: officialInfo,
+    postingUrl: submittedUrl,
+    inaccessible: state === 'UNABLE_TO_VERIFY' && !submittedInfo?.companyName
+  });
+
   return {
     success: true,
     state: state,
@@ -547,6 +703,8 @@ function formatVerificationResponse(submittedUrl, submittedInfo, officialInfo, s
     } : null,
     evidence: evidence || {},
     confidenceScore: score,
+    searchLinks: searchLinks,
+    authenticityAssessment: authenticityAssessment,
     verifiedAt: new Date().toISOString()
   };
 }
@@ -970,5 +1128,12 @@ module.exports = {
   isVerifiedATS,
   normalizeCompanyName,
   normalizeJobTitle,
-  DEMO_SCENARIOS
+  DEMO_SCENARIOS,
+  NOT_MENTIONED,
+  extractGroundedJobInfo,
+  detectJobPageType,
+  isLinkedInJobUrl,
+  isLinkedInGenericUrl,
+  isGenericAggregatorLanding,
+  generateCompanySearchQueries
 };

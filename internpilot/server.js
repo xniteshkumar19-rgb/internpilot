@@ -638,24 +638,69 @@ app.get('/api/source-finder/status', (req, res) => {
 // POST /api/source-finder/verify
 app.post('/api/source-finder/verify', async (req, res) => {
   try {
-    const { url, isDemo, rawHtml } = req.body || {};
-    if (!url || typeof url !== 'string' || !url.trim()) {
-      return res.status(400).json({ error: 'A valid internship URL is required.' });
+    const { url, isDemo, rawHtml, finalUrl, manualText } = req.body || {};
+    if ((!url || typeof url !== 'string' || !url.trim()) && (!manualText || typeof manualText !== 'string' || !manualText.trim())) {
+      return res.status(400).json({ error: 'A valid internship URL or job description is required.' });
     }
 
     if (!sourceFinder) {
       return res.status(503).json({ error: 'Source Finder engine is not available on this server.' });
     }
 
-    const result = await sourceFinder.verifyInternshipSource(url.trim(), {
+    const result = await sourceFinder.verifyInternshipSource((url || '').trim(), {
       isDemo: Boolean(isDemo),
-      rawHtml: rawHtml || null
+      rawHtml: rawHtml || null,
+      finalUrl: finalUrl || null,
+      manualText: manualText || null
     });
 
     return res.json(result);
   } catch (err) {
     console.error('Error in /api/source-finder/verify:', err);
     return res.status(500).json({ error: 'Internal server error during source verification: ' + err.message });
+  }
+});
+
+// POST /api/source-finder/assess-authenticity
+// Evaluates internship posting evidence across 8 dimensions
+app.post('/api/source-finder/assess-authenticity', async (req, res) => {
+  try {
+    const {
+      postingUrl,
+      companyName,
+      jobTitle,
+      location,
+      jobDescription,
+      stipend,
+      duration,
+      officialCandidate,
+      isDemo,
+      inaccessible
+    } = req.body || {};
+
+    const authenticityEngine = require('./authenticity-engine');
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+
+    const result = await authenticityEngine.assessJobAuthenticity({
+      postingUrl,
+      companyName,
+      jobTitle,
+      location,
+      jobDescription,
+      stipend,
+      duration,
+      officialCandidate,
+      isDemo: Boolean(isDemo),
+      inaccessible: Boolean(inaccessible)
+    }, {
+      apiKey,
+      geminiModel: GEMINI_MODEL
+    });
+
+    return res.json(result);
+  } catch (err) {
+    console.error('Error in /api/source-finder/assess-authenticity:', err);
+    return res.status(500).json({ error: 'Failed to assess job authenticity: ' + err.message });
   }
 });
 
