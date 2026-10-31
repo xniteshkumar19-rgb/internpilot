@@ -90,7 +90,17 @@ const CANONICAL_DEMO_DATA = {
       deadline: "November 25, 2026",
       contactEmail: "careers@apexcloudtech.com",
       stipend: "Rs 15,000 per month",
-      applicationMethod: "Email your resume and portfolio link to careers@apexcloudtech.com with subject 'Junior Web Developer Intern Application'"
+      applicationMethod: "Email your resume and portfolio link to careers@apexcloudtech.com with subject 'Junior Web Developer Intern Application'",
+      responsibilities: [
+        "Assist in developing and maintaining responsive web application frontends.",
+        "Collaborate with senior developers to implement clean HTML, CSS, and JavaScript features.",
+        "Participate in daily engineering standups and code reviews on GitHub."
+      ],
+      qualifications: [
+        "Pursuing a degree in Computer Science, IT, or related technical field.",
+        "Foundational knowledge of HTML, CSS, JavaScript, and Git version control.",
+        "Strong curiosity, problem-solving mindset, and willingness to learn modern cloud tools."
+      ]
     },
     email: {
       subject: "Application for Junior Web Developer Intern - Rohan Sharma",
@@ -114,7 +124,17 @@ const CANONICAL_DEMO_DATA = {
       deadline: "December 10, 2026",
       contactEmail: "interns@vanguarddatalabs.io",
       stipend: "Rs 20,000 per month",
-      applicationMethod: "Send applications directly to interns@vanguarddatalabs.io"
+      applicationMethod: "Send applications directly to interns@vanguarddatalabs.io",
+      responsibilities: [
+        "Build modular React user interface components according to design specifications.",
+        "Maintain unit test coverage and clean git branch workflows.",
+        "Collaborate with UX designers to ensure high accessibility and fast load times."
+      ],
+      qualifications: [
+        "Demonstrated project experience with JavaScript and React component development.",
+        "Understanding of responsive web design with modern CSS.",
+        "Familiarity with TypeScript or willingness to adopt static typing is a plus."
+      ]
     },
     email: {
       subject: "Application for Frontend Engineering Intern - Rohan Sharma",
@@ -167,7 +187,17 @@ const CANONICAL_DEMO_DATA = {
       deadline: "December 5, 2026",
       contactEmail: "contact@horizonnext.com",
       stipend: "Rs 18,000 monthly stipend",
-      applicationMethod: "Send your profile to contact@horizonnext.com"
+      applicationMethod: "Send your profile to contact@horizonnext.com",
+      responsibilities: [
+        "Write Python automation scripts for internal data collection and processing.",
+        "Implement and test web utility features using JavaScript.",
+        "Maintain version-controlled repositories and collaborate on Git."
+      ],
+      qualifications: [
+        "Proficiency in basic Python programming and syntax.",
+        "Understanding of web fundamentals (JavaScript, HTML, CSS).",
+        "Eagerness to learn backend database querying (SQL)."
+      ]
     },
     email: {
       subject: "Application for Python and Web Development Intern - Rohan Sharma",
@@ -188,7 +218,17 @@ const CANONICAL_DEMO_DATA = {
       deadline: "November 20, 2026",
       contactEmail: "starlight.creative.team@gmail.com",
       stipend: "Rs 12,000 monthly stipend",
-      applicationMethod: "Send your design portfolio to starlight.creative.team@gmail.com"
+      applicationMethod: "Send your design portfolio to starlight.creative.team@gmail.com",
+      responsibilities: [
+        "Design wireframes, prototypes, and user interfaces in Figma.",
+        "Translate visual designs into clean, responsive HTML and CSS code.",
+        "Collaborate with the creative team on user experience refinements."
+      ],
+      qualifications: [
+        "Solid command of HTML and CSS styling.",
+        "Experience or strong interest in UI design tools like Figma.",
+        "Eye for typography, visual hierarchy, and responsive layouts."
+      ]
     },
     email: {
       subject: "Application for Web Design Intern - Rohan Sharma",
@@ -211,7 +251,17 @@ const CANONICAL_DEMO_DATA = {
       deadline: "November 30, 2026",
       contactEmail: "ml-interns@neurodatatech.ai",
       stipend: "Rs 25,000 per month",
-      applicationMethod: "Emailing ml-interns@neurodatatech.ai"
+      applicationMethod: "Emailing ml-interns@neurodatatech.ai",
+      responsibilities: [
+        "Implement and evaluate machine learning model prototypes using PyTorch.",
+        "Clean, transform, and prepare large training datasets using SQL and Python.",
+        "Benchmark statistical performance metrics and document experiment findings."
+      ],
+      qualifications: [
+        "Strong foundation in Python programming and statistical mathematics.",
+        "Academic coursework or project experience in Machine Learning and Deep Learning.",
+        "Hands-on experience with PyTorch, TensorFlow, and relational databases."
+      ]
     },
     email: {
       subject: "Application for Associate Machine Learning Intern - Rohan Sharma",

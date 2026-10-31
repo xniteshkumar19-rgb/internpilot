@@ -156,9 +156,109 @@ assert(webProject && webProject.relevance && webProject.relevance.length > 10, "
 console.log("\n---------------------------------------------------------------\n");
 
 // ==========================================
-// TEST 6: BACKWARD-COMPATIBILITY FOR EXISTING FLOWS
+// TEST 6: 3 DIVERSE RESUME & JOB COMBINATIONS (TASK REQUIREMENT 10)
 // ==========================================
-console.log("▶ [TEST 6] Testing Backward-Compatibility for Existing Tools & Tests...");
+console.log("▶ [TEST 6] Testing 3 Diverse Resume & Job Description Combinations...");
+
+// --- COMBINATION 1: Frontend Candidate applying for Fullstack Role ---
+const combo1Resume = `
+ROHAN SHARMA - Frontend Specialist
+Skills: JavaScript, HTML5, CSS3, React, Git, Communication
+Experience: Built interactive client applications and responsive dashboards with vanilla JavaScript and React.
+`;
+const combo1Job = `
+Fullstack Developer Intern at Horizon Systems
+Responsibilities:
+- Build and maintain user interface components in React.
+- Develop REST API endpoints and connect PostgreSQL database.
+- Collaborate with engineering team using Git version control.
+Qualifications:
+- Strong foundations in JavaScript and React.
+- Familiarity with TypeScript and backend Node.js.
+Required Skills: JavaScript, React, Node.js, SQL
+Preferred Skills: TypeScript, PostgreSQL
+`;
+
+const res1 = analyzeCareerMatch(combo1Resume, combo1Job);
+assert(res1.matched.some(s => s.name === "javascript"), "Combo 1 (Frontend): JavaScript is matched");
+assert(res1.matched.some(s => s.name === "react"), "Combo 1 (Frontend): React is matched");
+assert(res1.partial.some(s => s.name === "typescript"), "Combo 1 (Frontend): TypeScript is partial match (via JavaScript)");
+assert(res1.partial.some(s => s.name === "node.js"), "Combo 1 (Frontend): Node.js is partial match (via JavaScript)");
+assert(res1.missing.some(s => s.name === "sql"), "Combo 1 (Frontend): SQL is missing gap");
+assert(res1.responsibilities.length >= 2, "Combo 1: Extracted key responsibilities");
+assert(res1.qualifications.length >= 2, "Combo 1: Extracted qualifications");
+
+// Check resume snippet grounding for partial match
+const tsPartialCombo1 = res1.partial.find(s => s.name === "typescript");
+assert(tsPartialCombo1 && tsPartialCombo1.foundationEvidence.includes("Resume proof"), "Combo 1: Partial match cites grounded resume proof");
+assert(tsPartialCombo1 && tsPartialCombo1.resumeSnippet !== null, "Combo 1: Contains verified resume quote");
+
+// --- COMBINATION 2: Data Science Candidate applying for Deep Learning Role ---
+const combo2Resume = `
+PRIYA PATEL - Data Science & Analytics
+Skills: Python, SQL, Pandas, NumPy, Machine Learning, Data Analysis, Statistics
+Experience: Built statistical classification models with Python and analyzed tabular datasets using Pandas and SQL.
+`;
+const combo2Job = `
+Deep Learning Research Intern at AI Vision Labs
+Responsibilities:
+- Train and fine-tune convolutional neural networks.
+- Clean and preprocess computer vision datasets using Python.
+- Evaluate statistical model performance against benchmark metrics.
+Qualifications:
+- Strong background in Python and linear algebra.
+- Experience with deep learning frameworks.
+Required Skills: Python, PyTorch, Deep Learning, Statistics
+Preferred Skills: Machine Learning, Pandas, Git
+`;
+
+const res2 = analyzeCareerMatch(combo2Resume, combo2Job);
+assert(res2.matched.some(s => s.name === "python"), "Combo 2 (Data Science): Python is matched");
+assert(res2.matched.some(s => s.name === "statistics"), "Combo 2 (Data Science): Statistics is matched");
+assert(res2.matched.some(s => s.name === "machine learning"), "Combo 2 (Data Science): Machine Learning is matched");
+assert(res2.partial.some(s => s.name === "pytorch"), "Combo 2 (Data Science): PyTorch is partial match (via Python)");
+assert(res2.partial.some(s => s.name === "deep learning"), "Combo 2 (Data Science): Deep Learning is partial match (via ML)");
+assert(res2.missing.some(s => s.name === "git"), "Combo 2 (Data Science): Git is missing");
+assert(res2.responsibilities.length >= 2, "Combo 2: Extracted responsibilities");
+
+// --- COMBINATION 3: Systems/DevOps Candidate applying for Cloud Infrastructure Role ---
+const combo3Resume = `
+ALEX CHEN - Systems & Infrastructure
+Skills: Linux, Docker, Git, Cloud, C++, AWS
+Experience: Configured multi-stage container builds in Docker and managed Linux servers with bash scripting.
+`;
+const combo3Job = `
+DevOps & Cloud Engineer Intern at CloudGrid Corp
+Responsibilities:
+- Maintain Docker container deployments across cloud clusters.
+- Write automation scripts and configure Linux environments.
+- Manage Git repositories and CI/CD pipelines.
+Qualifications:
+- Hands-on experience with Linux and Docker.
+- Working knowledge of cloud infrastructure.
+Required Skills: Linux, Docker, Git, Cloud
+Preferred Skills: AWS, Python
+`;
+
+const res3 = analyzeCareerMatch(combo3Resume, combo3Job);
+assert(res3.matched.some(s => s.name === "linux"), "Combo 3 (DevOps): Linux is matched");
+assert(res3.matched.some(s => s.name === "docker"), "Combo 3 (DevOps): Docker is matched");
+assert(res3.matched.some(s => s.name === "git"), "Combo 3 (DevOps): Git is matched");
+assert(res3.matched.some(s => s.name === "cloud"), "Combo 3 (DevOps): Cloud is matched");
+assert(res3.matched.some(s => s.name === "aws"), "Combo 3 (DevOps): AWS is matched");
+assert(res3.missing.some(s => s.name === "python"), "Combo 3 (DevOps): Python is missing gap");
+assert(res3.percent === 90, `Combo 3: Exact 90% score verified for 4 required (8 pts) + 1 preferred (1 pt) / 10 pts (Got: ${res3.percent}%)`);
+
+// Verify dynamic differentiation between the 3 combinations
+assert(res1.percent !== res2.percent || res1.matched.length !== res2.matched.length, "Combo 1 and Combo 2 produce distinct evaluation outputs");
+assert(res2.percent !== res3.percent || res2.matched.length !== res3.matched.length, "Combo 2 and Combo 3 produce distinct evaluation outputs");
+
+console.log("\n---------------------------------------------------------------\n");
+
+// ==========================================
+// TEST 7: BACKWARD-COMPATIBILITY FOR EXISTING FLOWS
+// ==========================================
+console.log("▶ [TEST 7] Testing Backward-Compatibility for Existing Tools & Tests...");
 
 const legacyResult = matchSkills(frontendResume, frontendJob, ["JavaScript", "TypeScript", "React"]);
 assert(typeof legacyResult.percent === "number", "matchSkills returns numerical percent");

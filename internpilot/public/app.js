@@ -863,6 +863,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const partialPct = totalCount > 0 ? Math.round((partialItems.length / totalCount) * 100) : 0;
     const missingPct = Math.max(0, 100 - matchedPct - partialPct);
 
+    // Job Posting Intelligence: Responsibilities & Qualifications
+    const responsibilities = (cm && Array.isArray(cm.responsibilities)) ? cm.responsibilities : [];
+    const qualifications = (cm && Array.isArray(cm.qualifications)) ? cm.qualifications : [];
+
+    // Filter counts for tabs
+    const allCompItems = [...matchedItems, ...partialItems, ...missingItems];
+    const requiredCount = allCompItems.filter(s => s.importance === "required").length;
+    const preferredCount = allCompItems.filter(s => s.importance === "preferred").length;
+
     // Badges & status styling
     let badgeClass = "badge-danger";
     let badgeText = `LOW MATCH (${percent}%)`;
@@ -874,10 +883,10 @@ document.addEventListener("DOMContentLoaded", () => {
       badgeText = `MODERATE MATCH (${percent}%)`;
     }
 
-    // Build Competency Matrix HTML
+    // Build Competency Matrix HTML with filter attributes
     const matchedHtml = matchedItems.length > 0
       ? matchedItems.map(s => `
-          <div class="competency-card status-matched">
+          <div class="competency-card status-matched" data-status="matched" data-importance="${s.importance === 'preferred' ? 'preferred' : 'required'}">
             <div class="comp-header">
               <span class="comp-name">${escapeHtml(s.name || s)}</span>
               <span class="comp-badge badge-matched">✓ Matched</span>
@@ -886,14 +895,14 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="comp-reason">${escapeHtml(s.reason || "Competency verified from your uploaded resume.")}</div>
           </div>
         `).join("")
-      : `<div class="comp-empty">No direct competency matches found in resume.</div>`;
+      : `<div class="comp-empty" data-status="matched" data-importance="required">No direct competency matches found in resume.</div>`;
 
     const partialHtml = partialItems.length > 0
       ? partialItems.map(s => `
-          <div class="competency-card status-partial">
+          <div class="competency-card status-partial" data-status="partial" data-importance="${s.importance === 'preferred' ? 'preferred' : 'required'}">
             <div class="comp-header">
               <span class="comp-name">${escapeHtml(s.name || s)}</span>
-              <span class="comp-badge badge-partial">⚡ Partial Match</span>
+              <span class="comp-badge badge-partial">⚡ Partial Match (0.5x)</span>
               <span class="comp-importance ${s.importance === 'preferred' ? 'importance-pref' : 'importance-req'}">${s.importance === 'preferred' ? 'Preferred' : 'Required'}</span>
             </div>
             <div class="comp-foundation"><strong>Foundation:</strong> ${escapeHtml(s.foundationEvidence || `Candidate's experience in ${s.foundationSkill || 'related concepts'} accelerates learning.`)}</div>
@@ -904,7 +913,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const missingHtml = missingItems.length > 0
       ? missingItems.map(s => `
-          <div class="competency-card status-missing">
+          <div class="competency-card status-missing" data-status="missing" data-importance="${s.importance === 'preferred' ? 'preferred' : 'required'}">
             <div class="comp-header">
               <span class="comp-name">${escapeHtml(s.name || s)}</span>
               <span class="comp-badge badge-missing">✕ Skill Gap</span>
@@ -913,7 +922,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="comp-reason"><strong>Why Needed:</strong> ${escapeHtml(s.reason || "Essential skill required to perform duties for this position.")}</div>
           </div>
         `).join("")
-      : `<div class="comp-empty">Zero missing skills! You meet all listed competencies.</div>`;
+      : `<div class="comp-empty" data-status="missing" data-importance="required">Zero missing skills! You meet all listed competencies.</div>`;
 
     // Personalized Learning Roadmap HTML
     const roadmapItems = (cm && Array.isArray(cm.roadmap) && cm.roadmap.length > 0)
@@ -1053,12 +1062,50 @@ document.addEventListener("DOMContentLoaded", () => {
           ${cm && cm.scoreBreakdown ? `<div class="gap-formula-note">ℹ️ ${escapeHtml(cm.scoreBreakdown)}</div>` : ''}
         </div>
 
+        <!-- Job Responsibilities & Qualifications Intelligence -->
+        ${(responsibilities.length > 0 || qualifications.length > 0) ? `
+          <div class="posting-intel-grid">
+            ${responsibilities.length > 0 ? `
+              <div class="intel-card intel-card-resp">
+                <div class="intel-card-header">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  <h5>Key Role Responsibilities (${responsibilities.length})</h5>
+                </div>
+                <ul class="intel-list">
+                  ${responsibilities.map(r => `<li>${escapeHtml(r)}</li>`).join("")}
+                </ul>
+              </div>
+            ` : ''}
+            ${qualifications.length > 0 ? `
+              <div class="intel-card intel-card-qual">
+                <div class="intel-card-header">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <h5>Qualifications & Prerequisites (${qualifications.length})</h5>
+                </div>
+                <ul class="intel-list">
+                  ${qualifications.map(q => `<li>${escapeHtml(q)}</li>`).join("")}
+                </ul>
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
         <!-- Competency Details Matrix -->
         <div class="careermatch-matrix-section">
-          <h4 class="careermatch-section-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            Competency Details & Requirements
-          </h4>
+          <div class="comp-matrix-header-row">
+            <h4 class="careermatch-section-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Competency Alignment Matrix
+            </h4>
+            <div class="comp-filter-tabs" role="tablist" aria-label="Filter competencies">
+              <button type="button" class="comp-filter-pill active" data-filter="all">All (${totalCount})</button>
+              <button type="button" class="comp-filter-pill" data-filter="matched">✓ Matched (${matchedItems.length})</button>
+              ${partialItems.length > 0 ? `<button type="button" class="comp-filter-pill" data-filter="partial">⚡ Partial (${partialItems.length})</button>` : ''}
+              <button type="button" class="comp-filter-pill" data-filter="missing">✕ Gaps (${missingItems.length})</button>
+              <button type="button" class="comp-filter-pill" data-filter="required">★ Required (${requiredCount})</button>
+              <button type="button" class="comp-filter-pill" data-filter="preferred">☆ Preferred (${preferredCount})</button>
+            </div>
+          </div>
           <div class="competencies-grid">
             ${matchedHtml}
             ${partialHtml}
@@ -1136,9 +1183,47 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Bind interactive filtering of competency cards by status and importance
+  function bindCareerMatchFilters(container) {
+    if (!container) return;
+    const pills = container.querySelectorAll(".comp-filter-pill");
+    const cards = container.querySelectorAll(".competency-card");
+
+    pills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        pills.forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        const filter = pill.getAttribute("data-filter");
+
+        cards.forEach(card => {
+          const status = card.getAttribute("data-status");
+          const importance = card.getAttribute("data-importance");
+
+          let show = false;
+          if (filter === "all") {
+            show = true;
+          } else if (filter === "matched" && status === "matched") {
+            show = true;
+          } else if (filter === "partial" && status === "partial") {
+            show = true;
+          } else if (filter === "missing" && status === "missing") {
+            show = true;
+          } else if (filter === "required" && importance === "required") {
+            show = true;
+          } else if (filter === "preferred" && importance === "preferred") {
+            show = true;
+          }
+
+          card.style.display = show ? "flex" : "none";
+        });
+      });
+    });
+  }
+
       case "match-halt": {
         stepDiv.innerHTML = renderCareerMatchCard(entry);
         bindRoadmapCheckboxes(stepDiv);
+        bindCareerMatchFilters(stepDiv);
 
         const draftBtn = stepDiv.querySelector(".btn-draft-anyway");
         if (draftBtn) {
@@ -1167,6 +1252,7 @@ document.addEventListener("DOMContentLoaded", () => {
       case "match-success": {
         stepDiv.innerHTML = renderCareerMatchCard(entry);
         bindRoadmapCheckboxes(stepDiv);
+        bindCareerMatchFilters(stepDiv);
         break;
       }
 
