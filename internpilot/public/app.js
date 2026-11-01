@@ -1946,6 +1946,60 @@ document.addEventListener("DOMContentLoaded", () => {
     const official = res.officialListing || {};
     const evidence = res.evidence || {};
 
+    const roleName = official.jobTitle || info.jobTitle || "Internship Role";
+    const compName = official.companyName || info.companyName || "Organization";
+
+    // -------------------------------------------------------------
+    // REDIRECT CHAIN INSPECTOR CARD HTML
+    // -------------------------------------------------------------
+    let redirectHtml = "";
+    if (redirectData && redirectData.ok && redirectData.chain && redirectData.chain.length > 0) {
+      const chain = redirectData.chain;
+      const finalDomain = redirectData.finalDomain || (chain[chain.length - 1] && chain[chain.length - 1].domain) || "";
+      const rawComp = (compName || "").toLowerCase().trim();
+      const normComp = rawComp.replace(/[^a-z0-9]/g, '');
+      const normFinal = (finalDomain || "").toLowerCase();
+      const domainContainsCompany = normComp.length >= 3 && (normFinal.includes(normComp) || rawComp.includes(normFinal.split('.')[0]));
+
+      const hopsHtml = chain.map((hop, idx) => {
+        const isFinal = idx === chain.length - 1;
+        const is3xx = hop.status >= 300 && hop.status < 400;
+        const badgeClass = is3xx ? 'status-3xx' : 'status-2xx';
+        return `
+          <span class="redirect-hop-node ${isFinal ? 'final-hop' : ''}">
+            <span class="hop-domain">${escapeHtml(hop.domain)}</span>
+            <span class="hop-status-badge ${badgeClass}">${hop.status}</span>
+          </span>
+          ${!isFinal ? `<span class="redirect-arrow">→</span>` : ''}
+        `;
+      }).join('');
+
+      redirectHtml = `
+        <div class="redirect-inspector-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <strong style="font-size: 0.85rem; color: #5eead4; display: flex; align-items: center; gap: 0.4rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Redirect Inspector
+            </strong>
+            <span style="font-size: 0.74rem; color: #94a3b8;">${chain.length - 1} redirect hop(s)</span>
+          </div>
+          <div class="redirect-chain-flow">
+            ${hopsHtml}
+          </div>
+          <div class="redirect-summary-text">
+            This link ends at <strong>${escapeHtml(finalDomain)}</strong>. A redirect shows where a link goes, not who published the job first.
+          </div>
+          ${domainContainsCompany ? `
+            <div class="redirect-company-match">
+              The final domain contains the company name. This does not prove it is the official site.
+            </div>
+          ` : ''}
+          <span class="redirect-js-note">(Note: JavaScript-based redirects are not detected)</span>
+        </div>
+      `;
+    }
+
+
     // -------------------------------------------------------------
     // DEDICATED INACCESSIBLE STATE (LinkedIn Authwall, Generic Landing, Expired, Access Denied)
     // -------------------------------------------------------------
@@ -2096,59 +2150,6 @@ document.addEventListener("DOMContentLoaded", () => {
       bing: `https://www.bing.com/search?q=${encodeURIComponent(`"${info.companyName || ''}" "${info.jobTitle || ''}" careers`)}`
     };
     const isDemoModeResult = Boolean(res.isDemo || (demoModeToggle && demoModeToggle.checked));
-    const roleName = official.jobTitle || info.jobTitle || "Internship Role";
-    const compName = official.companyName || info.companyName || "Organization";
-
-    // -------------------------------------------------------------
-    // REDIRECT CHAIN INSPECTOR CARD HTML
-    // -------------------------------------------------------------
-    let redirectHtml = "";
-    if (redirectData && redirectData.ok && redirectData.chain && redirectData.chain.length > 0) {
-      const chain = redirectData.chain;
-      const finalDomain = redirectData.finalDomain || (chain[chain.length - 1] && chain[chain.length - 1].domain) || "";
-      const rawComp = (compName || "").toLowerCase().trim();
-      const normComp = rawComp.replace(/[^a-z0-9]/g, '');
-      const normFinal = (finalDomain || "").toLowerCase();
-      const domainContainsCompany = normComp.length >= 3 && (normFinal.includes(normComp) || rawComp.includes(normFinal.split('.')[0]));
-
-      const hopsHtml = chain.map((hop, idx) => {
-        const isFinal = idx === chain.length - 1;
-        const is3xx = hop.status >= 300 && hop.status < 400;
-        const badgeClass = is3xx ? 'status-3xx' : 'status-2xx';
-        return `
-          <span class="redirect-hop-node ${isFinal ? 'final-hop' : ''}">
-            <span class="hop-domain">${escapeHtml(hop.domain)}</span>
-            <span class="hop-status-badge ${badgeClass}">${hop.status}</span>
-          </span>
-          ${!isFinal ? `<span class="redirect-arrow">→</span>` : ''}
-        `;
-      }).join('');
-
-      redirectHtml = `
-        <div class="redirect-inspector-card">
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-            <strong style="font-size: 0.85rem; color: #5eead4; display: flex; align-items: center; gap: 0.4rem;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              Redirect Inspector
-            </strong>
-            <span style="font-size: 0.74rem; color: #94a3b8;">${chain.length - 1} redirect hop(s)</span>
-          </div>
-          <div class="redirect-chain-flow">
-            ${hopsHtml}
-          </div>
-          <div class="redirect-summary-text">
-            This link ends at <strong>${escapeHtml(finalDomain)}</strong>. A redirect shows where a link goes, not who published the job first.
-          </div>
-          ${domainContainsCompany ? `
-            <div class="redirect-company-match">
-              The final domain contains the company name. This does not prove it is the official site.
-            </div>
-          ` : ''}
-          <span class="redirect-js-note">(Note: JavaScript-based redirects are not detected)</span>
-        </div>
-      `;
-    }
-
     // -------------------------------------------------------------
     // CASE 1: ASSISTED SOURCE VERIFICATION MODE (No API key needed)
     // -------------------------------------------------------------
