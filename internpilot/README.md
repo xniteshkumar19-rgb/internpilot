@@ -115,6 +115,6 @@ Run automated test suites from the `internpilot` directory:
 - Calendar export integration for approaching internship deadlines.
 
 ## Team
-- **Team Member 1:** [Name / Role Placeholder]
-- **Team Member 2:** [Name / Role Placeholder]
-- **Team Member 3:** [Name / Role Placeholder]
+- **Team Member 1:** NITESH KUMAR
+- **Team Member 2:** VANSHIKA RANA
+- **Team Member 3:** LAKSHAY DHINGRA
